@@ -80,3 +80,15 @@ Descanso = `endAt` absoluto; restante = `max(0, endAt - now)`, recalculado a cad
 - **Backup:** sessões finalizadas são imutáveis (id existente = mantém a local); plano vence por
   `updatedAt`; itens inválidos são ignorados e contados.
 - Dexie não permite trocar chave primária em migração; por isso a chave da ativa já nasce como `slot`.
+
+## Fase 2: decisões
+
+- **Navegação por estado** (aba + visão), sem router. O botão "voltar" do Android ainda sai do app;
+  avaliar `history.pushState` na Fase 3, quando houver sessão em andamento a proteger.
+- **Editor edita um treino por vez** e valida com o mesmo `WorkoutSchema` do banco
+  (`validateWorkout`). Campos numéricos guardam o texto digitado e só propagam valor válido.
+- **"Restaurar ficha original"** fica na aba Treinos (afeta a ficha inteira) e pede confirmação.
+- **Botão "Iniciar treino"** já existe no card, desabilitado até a Fase 3.
+- **Fontes** Barlow / Barlow Condensed self-hosted via `@fontsource` (só subconjunto latin).
+- **Tamanho:** JS ≈ 108 KB gzip (React + Dexie + zod). Orçamento é 150 KB; vigiar nas próximas fases.
+- Testes com Testing Library precisam de `cleanup` explícito (Vitest sem globals): está em `tests/setup.ts`.
