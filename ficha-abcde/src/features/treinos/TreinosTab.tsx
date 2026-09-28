@@ -5,15 +5,24 @@ import { formatDayMonth, formatIsoDate } from '../../domain/format';
 import { daysUntil, nextWorkoutFromHistory } from '../../domain/rules';
 import type { WorkoutId } from '../../domain/schemas';
 import { useState } from 'react';
+import { requestNotificationPermission } from '../../pwa/alerts';
 
 interface Props {
   onView: (id: WorkoutId) => void;
 }
 
 export function TreinosTab({ onView }: Props) {
-  const { plan, sessions, now, resetPlan } = useAppData();
+  const { plan, sessions, now, resetPlan, startSession } = useAppData();
   const [confirmReset, setConfirmReset] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function start(id: WorkoutId) {
+    // Permissão de notificação só depois de um toque do usuário (iniciar treino).
+    void requestNotificationPermission();
+    startSession(id).catch((e: unknown) =>
+      setError(`Não foi possível iniciar: ${e instanceof Error ? e.message : String(e)}`),
+    );
+  }
 
   const next = nextWorkoutFromHistory(sessions);
   const nextWorkout = plan.workouts.find((w) => w.id === next)!;
@@ -35,8 +44,7 @@ export function TreinosTab({ onView }: Props) {
         </h2>
         <p className="muted">{nextWorkout.muscles}</p>
         <div className="row">
-          {/* A sessão de treino entra na Fase 3. */}
-          <button className="btn btn-primary" disabled title="Disponível na próxima fase">
+          <button className="btn btn-primary" onClick={() => start(nextWorkout.id)}>
             Iniciar treino {nextWorkout.id}
           </button>
           <button className="btn" onClick={() => onView(nextWorkout.id)}>

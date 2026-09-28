@@ -1,11 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { Plan, Session } from '../domain/schemas';
+import type { ActiveSession, Plan, Session } from '../domain/schemas';
+import { buildSession, lastSetsByExercise, normalizeResume } from '../domain/session';
 import type { Repo } from './repo';
 import { AppDataCtx } from './appDataContext';
 import type { AppData } from './appDataContext';
 
-/** Carrega ficha e histórico do IndexedDB. Falha de leitura é mostrada, com "tentar de novo". */
+interface Loaded {
+  plan: Plan;
+  sessions: Session[];
+  active: ActiveSession | null;
+}
+
+/** Carrega ficha, histórico e sessão em andamento. Falha de leitura é mostrada, com "tentar de novo". */
 export function AppDataProvider({
   repo,
   now = Date.now,
@@ -15,17 +22,16 @@ export function AppDataProvider({
   now?: () => number;
   children: ReactNode;
 }) {
-  const [state, setState] = useState<{ plan: Plan; sessions: Session[] } | null>(null);
+  const [state, setState] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
-
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let alive = true;
-    Promise.all([repo.getPlan(), repo.listSessions()])
-      .then(([plan, sessions]) => {
+    Promise.all([repo.getPlan(), repo.listSessions(), repo.getActive()])
+      .then(([plan, sessions, active]) => {
         if (!alive) return;
-        setState({ plan, sessions });
+        setState({ plan, sessions, active: active && normalizeResume(active, now()) });
         setError(null);
       })
       .catch((e: unknown) => {
@@ -34,22 +40,45 @@ export function AppDataProvider({
     return () => {
       alive = false;
     };
-  }, [repo, attempt]);
+  }, [repo, attempt, now]);
 
   const value = useMemo<AppData | null>(() => {
     if (!state) return null;
+    const patch = (p: Partial<Loaded>) => setState((s) => (s ? { ...s, ...p } : s));
     return {
+      repo,
       plan: state.plan,
       sessions: state.sessions,
+      active: state.active,
       now,
       // Se a escrita falhar, o erro sobe para a tela que chamou (que mostra o aviso).
-      savePlan: async (p) => {
-        const saved = await repo.savePlan(p);
-        setState((s) => (s ? { ...s, plan: saved } : s));
+      savePlan: async (p) => patch({ plan: await repo.savePlan(p) }),
+      resetPlan: async () => patch({ plan: await repo.resetPlan() }),
+      startSession: async (id) => {
+        const workout = state.plan.workouts.find((w) => w.id === id)!;
+        const active = buildSession(workout, {
+          id: crypto.randomUUID(),
+          now: now(),
+          last: lastSetsByExercise(state.sessions),
+        });
+        await repo.saveActive(active);
+        patch({ active });
       },
-      resetPlan: async () => {
-        const plan = await repo.resetPlan();
-        setState((s) => (s ? { ...s, plan } : s));
+      finishSession: async (s) => {
+        const done = await repo.finishWith(s, now());
+        setState((cur) =>
+          cur
+            ? {
+                ...cur,
+                active: null,
+                sessions: [done, ...cur.sessions.filter((x) => x.id !== done.id)],
+              }
+            : cur,
+        );
+      },
+      discardSession: async () => {
+        await repo.discardActive();
+        patch({ active: null });
       },
     };
   }, [state, repo, now]);
@@ -65,11 +94,12 @@ export function AppDataProvider({
       </main>
     );
   }
-  if (!value)
+  if (!value) {
     return (
       <main className="screen">
         <p>Carregando…</p>
       </main>
     );
+  }
   return <AppDataCtx.Provider value={value}>{children}</AppDataCtx.Provider>;
 }

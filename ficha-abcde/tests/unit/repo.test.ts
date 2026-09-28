@@ -22,7 +22,7 @@ describe('plano', () => {
 describe('sessão ativa e finalização', () => {
   it('persiste e retoma exatamente como estava (incluindo descanso)', async () => {
     const { repo } = freshRepo();
-    const rest = { endAt: 5_000, totalMs: 60_000, exerciseId: 'A-2' };
+    const rest = { endAt: 5_000, totalMs: 60_000, exerciseId: 'A-2', setIdx: 0 };
     await repo.saveActive(active({ rest, note: 'ok' }));
     const back = await repo.getActive();
     expect(back?.rest).toEqual(rest);

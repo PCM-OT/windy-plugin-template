@@ -31,4 +31,4 @@ Abra o site no Chrome (Android) ou Safari (iOS) e use "Adicionar à tela inicial
 
 ## Status
 
-Fases 0–2 concluídas (scaffold; domínio e dados; telas Treinos, pré-visualização e editor). Próxima: Fase 3 (sessão de treino).
+Fases 0–3 concluídas (…; sessão de treino com descanso, persistência, wake lock e alertas). Próxima: Fase 4 (histórico, gráfico, backup, ajustes, PWA completo).

@@ -109,6 +109,24 @@ export function createRepo(db: FichaDB, clock: () => number = Date.now) {
       });
     },
 
+    /**
+     * Finaliza a partir do estado em memória (não depende de a última gravação ter chegado):
+     * grava no histórico e apaga a ativa numa transação só. Idempotente (mesmo id, `put`).
+     */
+    async finishWith(active: ActiveSession, endedAt: number = clock()): Promise<Session> {
+      const { rest: _rest, updatedAt: _u, ...base } = active;
+      const done = SessionSchema.parse({
+        ...base,
+        schemaVersion: SCHEMA_VERSION,
+        endedAt,
+      });
+      await db.transaction('rw', db.activeSession, db.sessions, async () => {
+        await db.sessions.put(done);
+        await db.activeSession.delete('current');
+      });
+      return done;
+    },
+
     // ---- histórico ----
     async listSessions(): Promise<Session[]> {
       const rows = await db.sessions.orderBy('startedAt').reverse().toArray();

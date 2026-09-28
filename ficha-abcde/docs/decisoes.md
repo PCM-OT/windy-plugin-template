@@ -92,3 +92,29 @@ Descanso = `endAt` absoluto; restante = `max(0, endAt - now)`, recalculado a cad
 - **Fontes** Barlow / Barlow Condensed self-hosted via `@fontsource` (só subconjunto latin).
 - **Tamanho:** JS ≈ 108 KB gzip (React + Dexie + zod). Orçamento é 150 KB; vigiar nas próximas fases.
 - Testes com Testing Library precisam de `cleanup` explícito (Vitest sem globals): está em `tests/setup.ts`.
+
+## Fase 3: decisões
+
+- **Descanso = `endAt` absoluto.** `setInterval` (250 ms) é só gatilho de re-render; todo valor sai de
+  `restRemainingMs(endAt, now, totalMs)`. Também recalcula em `visibilitychange`, `focus` e `pageshow`.
+- **Fim do descanso** (`alertOnce(endAt)`): 3 bipes (WebAudio) + vibração conforme Ajustes, e notificação
+  local só se o app estiver oculto e a permissão tiver sido concedida. Um `setTimeout` no instante exato
+  reforça em segundo plano; um controle por `endAt` impede alerta duplicado. O áudio é liberado no toque
+  de marcar a série (exigência dos navegadores).
+- **Limite conhecido:** com a tela bloqueada, navegadores móveis podem congelar timers. O alerta então
+  dispara ao desbloquear (o tempo continua correto, pois vem de `endAt`). Notificação agendada com o
+  app fechado não é possível de forma confiável na web.
+- **Reabrir o app:** descanso em curso continua com o tempo certo; descanso já vencido some em silêncio
+  (não apita por algo do passado).
+- **Persistência a cada alteração:** `useSession` atualiza a tela na hora e grava por uma fila coalescida
+  e serial (`saver.ts`) com retry exponencial. Falha mostra aviso visível e se recupera sozinha.
+- **Finalizar** usa o estado em memória (`repo.finishWith`), numa transação (histórico + apaga ativa).
+  O saver é fechado antes, para nenhuma gravação atrasada recriar a sessão ativa.
+- **Reps ao marcar** = máximo da faixa (10-12 → 12), só se o campo estiver vazio. Carga pré-preenchida
+  com a da última vez, série a série (se faltar, repete a última).
+- **Só o exercício atual abre**; concluídos recolhem com resumo; os demais abrem por toque.
+- **Descanso não inicia** na última série pendente do treino nem se o descanso do exercício for 0.
+- **Wake Lock** reaplicado ao voltar para o app; sem suporte, ignora.
+- **Adiado para a Fase 4:** aviso de atualização do SW (hoje só registra), modo "uma aba só",
+  tela de Ajustes (som/vibração já são lidos do banco; padrão = ligados).
+- Service worker registrado só em produção (`import.meta.env.PROD`).

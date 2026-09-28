@@ -23,7 +23,16 @@ export const active = (p: Partial<ActiveSession> = {}): ActiveSession => ({
   schemaVersion: 1,
   workoutId: 'A',
   startedAt: 100,
-  exercises: [{ id: 'A-2', name: 'Cadeira adutora', restSec: 60, noLoad: false }],
+  exercises: [
+    {
+      id: 'A-2',
+      name: 'Cadeira adutora',
+      restSec: 60,
+      noLoad: false,
+      reps: { min: 10, max: 12 },
+      machine: '17',
+    },
+  ],
   sets: [set()],
   note: '',
   rest: null,

@@ -17,3 +17,12 @@ export const formatReps = (r: { min: number; max: number } | null) =>
 export function formatRest(sec: number) {
   return sec >= 60 && sec % 60 === 0 ? `${sec / 60} min` : `${sec} s`;
 }
+
+/** "m:ss" (ou "h:mm:ss") a partir de segundos inteiros. */
+export function formatClock(totalSec: number): string {
+  const s = Math.max(0, Math.floor(totalSec));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const ss = String(s % 60).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+}

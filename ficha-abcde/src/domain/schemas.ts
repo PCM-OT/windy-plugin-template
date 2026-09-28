@@ -61,6 +61,12 @@ export const ExerciseSnapshotSchema = z.object({
   name: z.string(),
   restSec: z.number().int().min(0),
   noLoad: z.boolean(),
+  /** Alvo de repetições e máquina no momento do treino (null = a definir / sem número). */
+  reps: z
+    .object({ min: z.number().int(), max: z.number().int() })
+    .nullable()
+    .default(null),
+  machine: z.string().nullable().default(null),
 });
 export type ExerciseSnapshot = z.infer<typeof ExerciseSnapshotSchema>;
 
@@ -81,7 +87,13 @@ export type Session = z.infer<typeof SessionSchema>;
 export const ActiveSessionSchema = z.object({
   ...sessionBase,
   rest: z
-    .object({ endAt: z.number(), totalMs: z.number(), exerciseId: z.string() })
+    .object({
+      /** Instante absoluto (UTC ms) em que o descanso termina. */
+      endAt: z.number(),
+      totalMs: z.number(),
+      exerciseId: z.string(),
+      setIdx: z.number().int().nullable().default(null),
+    })
     .nullable(),
   updatedAt: z.number(),
 });

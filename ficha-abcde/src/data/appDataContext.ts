@@ -1,11 +1,18 @@
 import { createContext, useContext } from 'react';
-import type { Plan, Session } from '../domain/schemas';
+import type { ActiveSession, Plan, Session, WorkoutId } from '../domain/schemas';
+import type { Repo } from './repo';
 
 export interface AppData {
+  repo: Repo;
   plan: Plan;
   sessions: Session[];
+  /** Sessão em andamento (retomada ao reabrir o app). */
+  active: ActiveSession | null;
   savePlan: (p: Plan) => Promise<void>;
   resetPlan: () => Promise<void>;
+  startSession: (id: WorkoutId) => Promise<void>;
+  finishSession: (s: ActiveSession) => Promise<void>;
+  discardSession: () => Promise<void>;
   now: () => number;
 }
 

@@ -8,6 +8,8 @@ interface Props {
   onChange: (n: number | null) => void;
   inputMode?: 'numeric' | 'decimal';
   disabled?: boolean;
+  hideLabel?: boolean;
+  placeholder?: string;
 }
 
 /** Campo numérico tolerante: mantém o texto digitado e só propaga valores válidos. */
@@ -18,18 +20,28 @@ export function NumberInput({
   onChange,
   inputMode = 'numeric',
   disabled,
+  hideLabel,
+  placeholder,
 }: Props) {
   const [text, setText] = useState(value === null ? '' : String(value));
+  // Sincroniza quando o valor muda por fora (ex.: reps preenchidas ao marcar a série).
+  const [prev, setPrev] = useState(value);
+  if (value !== prev) {
+    setPrev(value);
+    if (value !== parse(text))
+      setText(value === null ? '' : String(value).replace('.', ','));
+  }
   const invalid = text.trim() !== '' && parse(text) === null;
   return (
     <label className="field">
-      <span>{label}</span>
+      <span className={hideLabel ? 'sr-only' : undefined}>{label}</span>
       <input
         type="text"
         inputMode={inputMode}
         enterKeyHint="done"
         autoComplete="off"
         value={text}
+        placeholder={placeholder}
         disabled={disabled}
         aria-invalid={invalid || undefined}
         onChange={(e) => {

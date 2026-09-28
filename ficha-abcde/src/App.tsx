@@ -3,6 +3,8 @@ import { TreinosTab } from './features/treinos/TreinosTab';
 import { WorkoutEditor } from './features/treinos/WorkoutEditor';
 import { WorkoutPreview } from './features/treinos/WorkoutPreview';
 import type { WorkoutId } from './domain/schemas';
+import { useAppData } from './data/appDataContext';
+import { SessaoScreen } from './features/sessao/SessaoScreen';
 
 type Tab = 'treinos' | 'historico' | 'ajustes';
 type View =
@@ -15,8 +17,12 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export function App() {
+  const { active } = useAppData();
   const [tab, setTab] = useState<Tab>('treinos');
   const [view, setView] = useState<View>({ kind: 'list' });
+
+  // Sessão em andamento tem prioridade: ao reabrir o app, retoma exatamente onde estava.
+  if (active) return <SessaoScreen key={active.id} initial={active} />;
 
   return (
     <div className="app">
