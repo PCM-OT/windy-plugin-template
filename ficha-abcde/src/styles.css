@@ -470,3 +470,185 @@ textarea {
 .ex {
   min-width: 0;
 }
+
+/* ---- histórico, ajustes ---- */
+.stats.card {
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0;
+}
+.stats.card > div {
+  text-align: center;
+}
+.ok {
+  background: #dcfce7;
+  color: #14532d;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0;
+}
+@media (prefers-color-scheme: dark) {
+  .ok {
+    background: #052e16;
+    color: #bbf7d0;
+  }
+}
+.update {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.update .btn {
+  flex: none;
+}
+select {
+  min-height: var(--tap);
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 1rem;
+  width: 100%;
+}
+.file-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: 1;
+}
+.file-btn:focus-within {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.file-btn.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.cal {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 4px;
+  table-layout: fixed;
+  text-align: center;
+}
+.cal th {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.cal td {
+  height: 48px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  padding: 2px;
+  vertical-align: middle;
+}
+.cal-day {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.1;
+}
+.cal-letter {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1.1;
+  min-height: 1.1em;
+}
+.cal td.cal-on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+.cal td.cal-on .cal-day {
+  color: var(--accent-fg);
+}
+.cal-today {
+  outline: 2px solid var(--fg);
+  outline-offset: -2px;
+}
+.cal td.cal-future {
+  border-style: dashed;
+  background: transparent;
+}
+.chart {
+  margin: 8px 0 0;
+}
+.chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.chart-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.chart-txt {
+  fill: var(--muted);
+  font-size: 11px;
+  font-family: var(--font);
+}
+.chart-strong {
+  fill: var(--fg);
+  font-weight: 600;
+}
+.chart-line {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+.chart-dot {
+  fill: var(--accent);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+.hist-item {
+  padding: 0;
+  overflow: hidden;
+}
+.hist-head {
+  width: 100%;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.hist-body {
+  padding: 0 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hist-sets {
+  list-style: none;
+  padding: 0;
+  margin: 2px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.hist-sets li {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 0.95rem;
+}
+.hist-sets .not-done {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.note {
+  font-style: italic;
+  margin: 4px 0;
+}

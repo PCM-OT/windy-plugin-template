@@ -118,3 +118,29 @@ Descanso = `endAt` absoluto; restante = `max(0, endAt - now)`, recalculado a cad
 - **Adiado para a Fase 4:** aviso de atualização do SW (hoje só registra), modo "uma aba só",
   tela de Ajustes (som/vibração já são lidos do banco; padrão = ligados).
 - Service worker registrado só em produção (`import.meta.env.PROD`).
+
+## Fase 4: decisões
+
+- **Histórico:** semana = segunda a domingo (São Paulo). "Sessões na semana" conta do início da semana até hoje.
+  Calendário mostra as letras dos treinos do dia (ex.: "AB"); o dia é o de `startedAt`.
+  Lista pagina de 50 em 50 ("Mostrar mais") para não renderizar centenas de itens.
+- **Gráfico:** SVG próprio (`LineChart`), carga máxima por sessão, eixo X proporcional ao tempo;
+  `role="img"` com resumo em texto. Só entram exercícios com carga registrada (mobilidade fica de fora).
+- **Backup:** exportar baixa `ficha-abcde-AAAA-MM-DD.json`; importar mescla, nunca sobrescreve sessão
+  finalizada, e uma falha deixa tudo como estava. Erros de escrita/importação sempre viram aviso visível.
+- **Uma aba só:** Web Locks. A primeira aba escreve; as demais ficam em leitura (com aviso) e assumem
+  sozinhas se a primeira fechar (relendo o banco). Se houver sessão ativa, a 2ª aba não a exibe (evita
+  dois editores). Sem Web Locks o app se comporta como antes.
+- **Atualização do PWA:** `registerType: "prompt"`; o banner "Nova versão disponível" só existe fora de
+  sessão, então a atualização nunca recarrega no meio de um treino.
+- **Armazenamento persistente:** pedido uma vez, na primeira abertura; resultado guardado em `settings` e
+  mostrado em Ajustes, com aviso e orientação se negado.
+- **ErrorBoundary** global: recarregar, exportar dados e (com segunda confirmação) limpar dados locais.
+- **Bug corrigido:** a leitura do histórico usava `orderBy` do Dexie, que ignora linhas sem o campo
+  indexado (registros muito corrompidos sumiam sem ir à quarentena). Agora lê tudo, valida e ordena em
+  memória; a quarentena deduplica por tabela+chave (reler não infla a contagem).
+- **Ícones** gerados por script a partir de um SVG e versionados; maskable com fundo cheio e conteúdo na
+  zona segura.
+- **Acessibilidade:** teste e2e com axe-core (WCAG 2.1 AA) nas telas principais, em tema claro e escuro.
+- **Lighthouse:** não foi possível rodar aqui (recusa o Chromium disponível por ser antigo). Rodar
+  localmente em Chrome atual: `npx lighthouse http://localhost:4173 --form-factor=mobile`.

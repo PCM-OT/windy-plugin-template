@@ -48,6 +48,13 @@ describe('sessão ativa e finalização', () => {
     expect(await repo.getActive()).not.toBeNull();
     expect(await db.sessions.count()).toBe(0);
   });
+  it('reler o mesmo registro inválido não duplica a quarentena', async () => {
+    const { repo, db } = freshRepo();
+    await db.sessions.put({ id: 'ruim', startedAt: 1 } as never);
+    await repo.listSessions();
+    await repo.listSessions();
+    expect(await repo.quarantineCount()).toBe(1);
+  });
   it('sessão ativa inválida é isolada, não derruba a leitura', async () => {
     const { repo, db } = freshRepo();
     await db.activeSession.put({ slot: 'current', id: 'x' } as never);
@@ -136,5 +143,14 @@ describe('histórico e backup', () => {
     });
     expect(p.sessions).toHaveLength(1);
     expect(p.ignored).toBe(1); // plano inválido
+  });
+});
+
+describe('leitura tolerante', () => {
+  it('registro sem campos indexados também vai para a quarentena (não some em silêncio)', async () => {
+    const { repo, db } = freshRepo();
+    await db.sessions.put({ id: 'so-id' } as never);
+    expect(await repo.listSessions()).toEqual([]);
+    expect(await repo.quarantineCount()).toBe(1);
   });
 });

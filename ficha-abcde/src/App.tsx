@@ -3,6 +3,9 @@ import { TreinosTab } from './features/treinos/TreinosTab';
 import { WorkoutEditor } from './features/treinos/WorkoutEditor';
 import { WorkoutPreview } from './features/treinos/WorkoutPreview';
 import type { WorkoutId } from './domain/schemas';
+import { HistoricoTab } from './features/historico/HistoricoTab';
+import { AjustesTab } from './features/ajustes/AjustesTab';
+import { UpdateBanner } from './components/UpdateBanner';
 import { useAppData } from './data/appDataContext';
 import { SessaoScreen } from './features/sessao/SessaoScreen';
 
@@ -17,11 +20,22 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export function App() {
-  const { active } = useAppData();
+  const { active, readOnly } = useAppData();
   const [tab, setTab] = useState<Tab>('treinos');
   const [view, setView] = useState<View>({ kind: 'list' });
 
   // Sessão em andamento tem prioridade: ao reabrir o app, retoma exatamente onde estava.
+  if (active && readOnly) {
+    return (
+      <main className="screen" role="alert">
+        <h1 className="big">Treino em andamento em outra aba</h1>
+        <p>
+          Este app já está aberto em outra aba ou janela, com um treino em andamento.
+          Volte para ela, ou feche-a para continuar aqui.
+        </p>
+      </main>
+    );
+  }
   if (active) return <SessaoScreen key={active.id} initial={active} />;
 
   return (
@@ -29,6 +43,13 @@ export function App() {
       <header className="topbar">
         <span className="brand">Ficha ABCDE</span>
       </header>
+      {readOnly && (
+        <p className="warn banner" role="status">
+          Este app está aberto em outra aba. Aqui você só pode consultar; feche a outra
+          aba para editar.
+        </p>
+      )}
+      <UpdateBanner />
       <main>
         {tab === 'treinos' && view.kind === 'list' && (
           <TreinosTab onView={(id) => setView({ kind: 'preview', id })} />
@@ -46,11 +67,8 @@ export function App() {
             onDone={() => setView({ kind: 'preview', id: view.id })}
           />
         )}
-        {tab !== 'treinos' && (
-          <div className="screen">
-            <p className="muted">Disponível em uma próxima fase.</p>
-          </div>
-        )}
+        {tab === 'historico' && <HistoricoTab />}
+        {tab === 'ajustes' && <AjustesTab />}
       </main>
       <nav className="tabbar" aria-label="Seções">
         {TABS.map((t) => (

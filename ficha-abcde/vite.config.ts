@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      includeAssets: ['icon.svg', 'icons/apple-touch-icon.png'],
       registerType: 'prompt',
       workbox: { globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'] },
       manifest: {
@@ -18,8 +19,19 @@ export default defineConfig({
         scope: '/',
         theme_color: '#0f172a',
         background_color: '#0f172a',
-        // Ícones (192, 512, maskable) entram na Fase 4.
-        icons: [],
+        id: '/',
+        description: 'Ficha de treino ABCDE offline: séries, descanso e histórico.',
+        categories: ['health', 'fitness'],
+        icons: [
+          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          {
+            src: 'icons/maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
       },
     }),
   ],

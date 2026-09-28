@@ -23,5 +23,6 @@ export default tseslint.config(
       'no-empty': ['error', { allowEmptyCatch: false }],
     },
   },
+  { files: ['scripts/**/*.mjs'], languageOptions: { globals: globals.node } },
   prettier,
 );

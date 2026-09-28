@@ -22,17 +22,26 @@ async function validated<T>(
 ): Promise<T | null> {
   const r = schema.safeParse(raw);
   if (r.success) return r.data;
-  const key = (raw as { id?: unknown })?.id;
-  await db.quarantine.add({
-    table,
-    key: typeof key === 'string' ? key : null,
-    reason: r.error.issues
-      .map((i) => `${i.path.join('.')}: ${i.message}`)
-      .join('; ')
-      .slice(0, 500),
-    raw,
-    at: now,
-  });
+  const id = (raw as { id?: unknown } | null)?.id;
+  // Sem id, identifica pelo conteúdo. Assim reler o mesmo registro ruim não infla a contagem.
+  const key = typeof id === 'string' ? id : (JSON.stringify(raw) ?? 'null').slice(0, 200);
+  const already = await db.quarantine
+    .where('table')
+    .equals(table)
+    .filter((q) => q.key === key)
+    .count();
+  if (already === 0) {
+    await db.quarantine.add({
+      table,
+      key,
+      reason: r.error.issues
+        .map((i) => `${i.path.join('.')}: ${i.message}`)
+        .join('; ')
+        .slice(0, 500),
+      raw,
+      at: now,
+    });
+  }
   return null;
 }
 
@@ -128,14 +137,16 @@ export function createRepo(db: FichaDB, clock: () => number = Date.now) {
     },
 
     // ---- histórico ----
+    /** Histórico válido, do mais novo ao mais antigo. */
     async listSessions(): Promise<Session[]> {
-      const rows = await db.sessions.orderBy('startedAt').reverse().toArray();
+      // toArray (e não orderBy): linhas sem o campo indexado sumiriam da leitura em vez de irem à quarentena.
+      const rows = await db.sessions.toArray();
       const out: Session[] = [];
       for (const raw of rows) {
         const s = await validated(db, 'sessions', SessionSchema, raw, clock());
         if (s) out.push(s);
       }
-      return out;
+      return out.sort((a, b) => b.startedAt - a.startedAt);
     },
     async deleteSession(id: string): Promise<void> {
       await db.sessions.delete(id);

@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function TreinosTab({ onView }: Props) {
-  const { plan, sessions, now, resetPlan, startSession } = useAppData();
+  const { plan, sessions, now, resetPlan, startSession, readOnly } = useAppData();
   const [confirmReset, setConfirmReset] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +44,11 @@ export function TreinosTab({ onView }: Props) {
         </h2>
         <p className="muted">{nextWorkout.muscles}</p>
         <div className="row">
-          <button className="btn btn-primary" onClick={() => start(nextWorkout.id)}>
+          <button
+            className="btn btn-primary"
+            disabled={readOnly}
+            onClick={() => start(nextWorkout.id)}
+          >
             Iniciar treino {nextWorkout.id}
           </button>
           <button className="btn" onClick={() => onView(nextWorkout.id)}>
@@ -101,7 +105,11 @@ export function TreinosTab({ onView }: Props) {
         })}
       </ul>
 
-      <button className="btn btn-link" onClick={() => setConfirmReset(true)}>
+      <button
+        className="btn btn-link"
+        disabled={readOnly}
+        onClick={() => setConfirmReset(true)}
+      >
         Restaurar ficha original
       </button>
       {error && (

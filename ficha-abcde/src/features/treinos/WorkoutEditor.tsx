@@ -20,7 +20,7 @@ interface Props {
 }
 
 export function WorkoutEditor({ id, onDone }: Props) {
-  const { plan, savePlan } = useAppData();
+  const { plan, savePlan, readOnly } = useAppData();
   const [w, setW] = useState(() => plan.workouts.find((x) => x.id === id)!);
   const [errors, setErrors] = useState<string[]>([]);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -213,7 +213,7 @@ export function WorkoutEditor({ id, onDone }: Props) {
         </button>
         <button
           className="btn btn-primary"
-          disabled={saving || !dirty}
+          disabled={saving || !dirty || readOnly}
           onClick={() => void save()}
         >
           {saving ? 'Salvando…' : 'Salvar'}

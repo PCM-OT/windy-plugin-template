@@ -26,3 +26,29 @@ export function formatClock(totalSec: number): string {
   const ss = String(s % 60).padStart(2, '0');
   return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
 }
+
+const TZ_SP = 'America/Sao_Paulo';
+
+/** "junho de 2026" a partir de "2026-06". */
+export const formatMonth = (key: string) =>
+  new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'UTC',
+    month: 'long',
+    year: 'numeric',
+  }).format(Date.parse(`${key}-15T12:00:00Z`));
+
+/** "seg., 12/03 · 18:30" no fuso de São Paulo. */
+export const formatDateTime = (ms: number) => {
+  const d = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: TZ_SP,
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit',
+  }).format(ms);
+  const t = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: TZ_SP,
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(ms);
+  return `${d} · ${t}`;
+};

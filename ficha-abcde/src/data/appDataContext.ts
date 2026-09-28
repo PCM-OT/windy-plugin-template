@@ -13,6 +13,11 @@ export interface AppData {
   startSession: (id: WorkoutId) => Promise<void>;
   finishSession: (s: ActiveSession) => Promise<void>;
   discardSession: () => Promise<void>;
+  deleteSession: (id: string) => Promise<void>;
+  /** Relê tudo do banco (ex.: depois de importar um backup). */
+  reload: () => Promise<void>;
+  /** Outra aba está com o app aberto: esta aba só lê. */
+  readOnly: boolean;
   now: () => number;
 }
 

@@ -31,4 +31,13 @@ Abra o site no Chrome (Android) ou Safari (iOS) e use "Adicionar à tela inicial
 
 ## Status
 
-Fases 0–3 concluídas (…; sessão de treino com descanso, persistência, wake lock e alertas). Próxima: Fase 4 (histórico, gráfico, backup, ajustes, PWA completo).
+Fases 0–4 concluídas (…; histórico, gráfico, backup, ajustes e PWA completo). Próxima: Fase 5 (Supabase opcional + deploy na Vercel).
+
+## Ícones do PWA
+
+Os PNGs (192, 512, maskable, apple-touch) saem de `public/icon.svg`: `npm run icons` (usa `sharp`).
+
+## Backup
+
+Ajustes → Exportar backup (JSON) / Importar backup (mescla por id, sem duplicar; itens inválidos são
+ignorados e contados). Faça um backup de vez em quando: navegadores podem apagar dados locais.
