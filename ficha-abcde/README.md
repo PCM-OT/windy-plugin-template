@@ -31,4 +31,4 @@ Abra o site no Chrome (Android) ou Safari (iOS) e use "Adicionar à tela inicial
 
 ## Status
 
-Fase 0 concluída (scaffold). Próxima: Fase 1 (domínio + Dexie + seed).
+Fases 0 e 1 concluídas (scaffold; domínio, Dexie, seed, migrações). Próxima: Fase 2 (telas Treinos e editor).

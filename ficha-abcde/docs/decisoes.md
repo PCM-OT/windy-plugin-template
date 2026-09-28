@@ -66,3 +66,17 @@ Descanso = `endAt` absoluto; restante = `max(0, endAt - now)`, recalculado a cad
 
 0 scaffold+plano · 1 domínio+Dexie+seed+migrações · 2 Treinos/editor · 3 sessão + e2e offline ·
 4 histórico, gráfico, backup, ajustes, PWA completo · 5 Supabase + Vercel.
+
+## Fase 1: decisões
+
+- **Sessão ativa** fica na tabela `activeSession` com chave fixa `slot: 'current'` (o `id` da linha
+  é o uuid da sessão, que vira o id do histórico ao finalizar → `put` idempotente).
+- **Migração v1→v2** (a v1 é o formato inicial): adiciona `quarantine`, índice `endedAt` e carimba
+  `schemaVersion` em registros antigos. Testada abrindo um banco criado no formato v1.
+- **Leitura validada:** `repo.ts` valida com zod ao ler; linha inválida vai para `quarantine`
+  (contada em Ajustes) e é ignorada. Plano corrompido volta ao seed.
+- **Histórico guarda um snapshot** dos exercícios (nome, descanso, sem carga) para não mudar
+  se a ficha for editada depois.
+- **Backup:** sessões finalizadas são imutáveis (id existente = mantém a local); plano vence por
+  `updatedAt`; itens inválidos são ignorados e contados.
+- Dexie não permite trocar chave primária em migração; por isso a chave da ativa já nasce como `slot`.
