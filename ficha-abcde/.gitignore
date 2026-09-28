@@ -1,0 +1,9 @@
+node_modules
+dist
+dev-dev-dist
+test-results
+playwright-report
+*.log
+# o .gitignore da raiz ignora lockfile e dist/*; aqui o lockfile é versionado
+!package-lock.json
+*.tsbuildinfo

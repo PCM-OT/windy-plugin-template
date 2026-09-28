@@ -1,0 +1,26 @@
+name: Ficha ABCDE CI
+on:
+  push:
+    paths: ['ficha-abcde/**', '.github/workflows/ficha-abcde-ci.yml']
+  pull_request:
+    paths: ['ficha-abcde/**', '.github/workflows/ficha-abcde-ci.yml']
+defaults:
+  run:
+    working-directory: ficha-abcde
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ficha-abcde/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
