@@ -652,3 +652,14 @@ select {
   font-style: italic;
   margin: 4px 0;
 }
+
+.topbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sync-status {
+  font-size: 0.8rem;
+  color: var(--muted);
+}

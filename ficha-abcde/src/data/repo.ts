@@ -9,7 +9,7 @@ import {
 import type { ActiveSession, Plan, Session, Settings } from '../domain/schemas';
 import { buildBackup, mergeBackup, parseBackup } from '../domain/backup';
 import type { BackupData } from '../domain/backup';
-import type { FichaDB } from './db';
+import type { FichaDB, SyncTable } from './db';
 import { defaultSettings, seedPlan } from './seed';
 
 /** Valida uma linha; se inválida, isola em `quarantine` e devolve null (nunca lança). */
@@ -45,6 +45,18 @@ async function validated<T>(
   return null;
 }
 
+/** Enfileira o envio (dentro da mesma transação da gravação: ou grava e enfileira, ou nada). */
+async function enqueue(
+  db: FichaDB,
+  table: SyncTable,
+  id: string,
+  op: 'upsert' | 'delete',
+  at: number,
+) {
+  await db.outbox.where('[table+id]').equals([table, id]).delete();
+  await db.outbox.add({ table, id, op, at });
+}
+
 export function createRepo(db: FichaDB, clock: () => number = Date.now) {
   const stripSlot = ({ slot: _slot, ...rest }: ActiveSession & { slot: 'current' }) =>
     rest;
@@ -55,7 +67,11 @@ export function createRepo(db: FichaDB, clock: () => number = Date.now) {
       const raw = await db.plan.get('plan');
       const plan = raw ? await validated(db, 'plan', PlanSchema, raw, clock()) : null;
       if (plan) return plan;
-      return this.resetPlan(); // ausente ou corrompida: volta ao seed (a corrompida fica na quarentena)
+      // Ausente ou corrompida: volta ao seed (a corrompida fica na quarentena). O seed "virgem" tem
+      // updatedAt 0 e não sincroniza: nunca deve sobrescrever uma ficha editada em outro aparelho.
+      const pristine = seedPlan(0);
+      await db.plan.put(pristine);
+      return pristine;
     },
     async savePlan(plan: Plan): Promise<Plan> {
       const next = PlanSchema.parse({
@@ -63,12 +79,18 @@ export function createRepo(db: FichaDB, clock: () => number = Date.now) {
         schemaVersion: SCHEMA_VERSION,
         updatedAt: clock(),
       });
-      await db.plan.put(next);
+      await db.transaction('rw', db.plan, db.outbox, async () => {
+        await db.plan.put(next);
+        await enqueue(db, 'plan', 'plan', 'upsert', next.updatedAt);
+      });
       return next;
     },
     async resetPlan(): Promise<Plan> {
-      const plan = seedPlan(clock());
-      await db.plan.put(plan);
+      const plan = seedPlan(clock()); // ação deliberada do usuário: sincroniza como qualquer edição
+      await db.transaction('rw', db.plan, db.outbox, async () => {
+        await db.plan.put(plan);
+        await enqueue(db, 'plan', 'plan', 'upsert', plan.updatedAt);
+      });
       return plan;
     },
 
@@ -103,7 +125,7 @@ export function createRepo(db: FichaDB, clock: () => number = Date.now) {
      * Idempotente: finalizar duas vezes mantém uma única linha (mesmo id, `put`).
      */
     async finishActive(endedAt: number = clock()): Promise<Session | null> {
-      return db.transaction('rw', db.activeSession, db.sessions, async () => {
+      return db.transaction('rw', db.activeSession, db.sessions, db.outbox, async () => {
         const raw = await db.activeSession.get('current');
         if (!raw) return null;
         const { rest: _rest, updatedAt: _u, ...base } = stripSlot(raw);
@@ -113,6 +135,7 @@ export function createRepo(db: FichaDB, clock: () => number = Date.now) {
           endedAt,
         });
         await db.sessions.put(done);
+        await enqueue(db, 'sessions', done.id, 'upsert', done.endedAt);
         await db.activeSession.delete('current');
         return done;
       });
@@ -129,8 +152,9 @@ export function createRepo(db: FichaDB, clock: () => number = Date.now) {
         schemaVersion: SCHEMA_VERSION,
         endedAt,
       });
-      await db.transaction('rw', db.activeSession, db.sessions, async () => {
+      await db.transaction('rw', db.activeSession, db.sessions, db.outbox, async () => {
         await db.sessions.put(done);
+        await enqueue(db, 'sessions', done.id, 'upsert', done.endedAt);
         await db.activeSession.delete('current');
       });
       return done;
@@ -149,7 +173,10 @@ export function createRepo(db: FichaDB, clock: () => number = Date.now) {
       return out.sort((a, b) => b.startedAt - a.startedAt);
     },
     async deleteSession(id: string): Promise<void> {
-      await db.sessions.delete(id);
+      await db.transaction('rw', db.sessions, db.outbox, async () => {
+        await db.sessions.delete(id);
+        await enqueue(db, 'sessions', id, 'delete', clock());
+      });
     },
 
     // ---- ajustes ----
@@ -164,8 +191,52 @@ export function createRepo(db: FichaDB, clock: () => number = Date.now) {
       return d;
     },
     async saveSettings(s: Settings): Promise<void> {
-      await db.settings.put(
-        SettingsSchema.parse({ ...s, schemaVersion: SCHEMA_VERSION }),
+      const prev = await db.settings.get('settings');
+      // Só som/vibração sincronizam; persistGranted é do aparelho e não conta como mudança.
+      const changed =
+        !!prev && (prev.sound !== s.sound || prev.vibration !== s.vibration);
+      const next = SettingsSchema.parse({
+        ...s,
+        schemaVersion: SCHEMA_VERSION,
+        updatedAt: changed ? clock() : (prev?.updatedAt ?? s.updatedAt),
+      });
+      await db.transaction('rw', db.settings, db.outbox, async () => {
+        await db.settings.put(next);
+        if (changed) await enqueue(db, 'settings', 'settings', 'upsert', next.updatedAt);
+      });
+    },
+    /**
+     * Ao ligar a sincronização com uma conta nova: enfileira tudo o que existe no aparelho.
+     * Idempotente (o servidor faz upsert por id). Seed/padrões nunca editados (updatedAt 0) ficam de fora.
+     */
+    async enqueueAll(): Promise<number> {
+      return db.transaction(
+        'rw',
+        db.sessions,
+        db.plan,
+        db.settings,
+        db.outbox,
+        async () => {
+          let n = 0;
+          for (const raw of await db.sessions.toArray()) {
+            const r = SessionSchema.safeParse(raw);
+            if (r.success) {
+              await enqueue(db, 'sessions', r.data.id, 'upsert', r.data.endedAt);
+              n++;
+            }
+          }
+          const plan = await db.plan.get('plan');
+          if (plan && plan.updatedAt > 0) {
+            await enqueue(db, 'plan', 'plan', 'upsert', plan.updatedAt);
+            n++;
+          }
+          const st = await db.settings.get('settings');
+          if (st && (st.updatedAt ?? 0) > 0) {
+            await enqueue(db, 'settings', 'settings', 'upsert', st.updatedAt);
+            n++;
+          }
+          return n;
+        },
       );
     },
     async quarantineCount(): Promise<number> {
@@ -196,11 +267,26 @@ export function createRepo(db: FichaDB, clock: () => number = Date.now) {
         sessions: await this.listSessions(),
       };
       const { data, added, skipped } = mergeBackup(local, incoming);
-      await db.transaction('rw', db.plan, db.sessions, db.settings, async () => {
-        if (data.plan) await db.plan.put(data.plan);
-        if (data.settings) await db.settings.put(data.settings);
-        await db.sessions.bulkPut(data.sessions);
-      });
+      const knownIds = new Set(local.sessions.map((x) => x.id));
+      await db.transaction(
+        'rw',
+        db.plan,
+        db.sessions,
+        db.settings,
+        db.outbox,
+        async () => {
+          if (data.plan) await db.plan.put(data.plan);
+          if (data.settings) await db.settings.put(data.settings);
+          await db.sessions.bulkPut(data.sessions);
+          for (const x of data.sessions) {
+            if (!knownIds.has(x.id))
+              await enqueue(db, 'sessions', x.id, 'upsert', x.endedAt);
+          }
+          if (data.plan && data.plan !== local.plan && data.plan.updatedAt > 0) {
+            await enqueue(db, 'plan', 'plan', 'upsert', data.plan.updatedAt);
+          }
+        },
+      );
       return { added, skipped, ignored: incoming.ignored };
     },
   };

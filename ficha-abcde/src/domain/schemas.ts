@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+// CSP restritiva (sem 'unsafe-eval'): o zod não deve nem tentar compilar validadores com new Function.
+z.config({ jitless: true });
+
 export const SCHEMA_VERSION = 1;
 
 export const WorkoutIdSchema = z.enum(['A', 'B', 'C', 'D', 'E']);
@@ -105,6 +108,8 @@ export const SettingsSchema = z.object({
   sound: z.boolean(),
   vibration: z.boolean(),
   persistGranted: z.boolean().nullable(),
+  /** Última mudança de som/vibração (UTC ms). 0 = padrão nunca alterado (não sincroniza). */
+  updatedAt: z.number().default(0),
 });
 export type Settings = z.infer<typeof SettingsSchema>;
 

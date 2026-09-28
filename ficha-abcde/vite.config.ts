@@ -1,9 +1,25 @@
 /// <reference types="vitest/config" />
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// O preview local serve os mesmos cabeçalhos (CSP etc.) do vercel.json: o e2e testa a política real.
+const vercel = JSON.parse(
+  readFileSync(new URL('./vercel.json', import.meta.url), 'utf8'),
+) as {
+  headers: { source: string; headers: { key: string; value: string }[] }[];
+};
+const previewHeaders = Object.fromEntries(
+  vercel.headers
+    .filter((h) => h.source === '/(.*)')
+    .flatMap((h) => h.headers)
+    .filter((h) => h.key !== 'Strict-Transport-Security') // HSTS não se aplica a http://localhost
+    .map((h) => [h.key, h.value]),
+);
+
 export default defineConfig({
+  preview: { headers: previewHeaders },
   plugins: [
     react(),
     VitePWA({

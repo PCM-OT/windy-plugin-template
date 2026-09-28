@@ -144,3 +144,38 @@ Descanso = `endAt` absoluto; restante = `max(0, endAt - now)`, recalculado a cad
 - **Acessibilidade:** teste e2e com axe-core (WCAG 2.1 AA) nas telas principais, em tema claro e escuro.
 - **Lighthouse:** não foi possível rodar aqui (recusa o Chromium disponível por ser antigo). Rodar
   localmente em Chrome atual: `npx lighthouse http://localhost:4173 --form-factor=mobile`.
+
+## Fase 5: decisões (sincronização e deploy)
+
+- **Local-first.** O IndexedDB continua sendo a fonte da verdade. Sem login nada roda e o cliente Supabase
+  nem é baixado (import dinâmico, chunk separado de ~55 KB gzip; o JS inicial fica em ~121 KB).
+- **Fila de saída (`outbox`, Dexie v3).** Toda alteração de sessão/ficha/ajustes entra na fila **na mesma
+  transação** da gravação (ou grava e enfileira, ou nada). Uma linha por (tabela, id): a mais nova
+  substitui a anterior. O envio lê o estado atual e faz `upsert` por `(user_id, id)`: idempotente.
+- **Ciclo = enviar, depois ler.** Assim uma exclusão nossa chega ao servidor antes de lermos de volta.
+  Leitura incremental por `synced_at` (relógio do **servidor**, definido por gatilho), inclusiva e
+  idempotente; `updated_at` (relógio do cliente) só decide "última escrita vence". Isso evita perder
+  linhas de um aparelho com relógio errado.
+- **Conflitos (aplicados no cliente e, de novo, no servidor pelo gatilho `sync_guard`):** sessão finalizada
+  é imutável; excluir vence editar (a linha excluída nunca ressuscita); plano/ajustes: última escrita vence.
+  Exclusão é lógica (`deleted_at`); não existe policy de DELETE.
+- **Seed nunca sobrescreve.** A ficha padrão (nunca editada) tem `updatedAt = 0` e não sincroniza; senão
+  um aparelho novo, com relógio mais novo, apagaria a ficha editada em outro aparelho.
+- **Ajustes:** só som/vibração sincronizam; `persistGranted` é do aparelho.
+- **Sessão em andamento não sincroniza** (só treinos finalizados), para não haver dois aparelhos editando
+  a mesma sessão.
+- **Agendador:** ao iniciar, ao voltar a rede (`online`), após alterações (atraso de 1,5 s), a cada 60 s e
+  com backoff exponencial (2 s, 4 s … teto de 5 min) após falhas; o gatilho periódico respeita o backoff.
+  Só a aba líder (Web Locks) sincroniza.
+- **Trocar de conta** no mesmo aparelho zera fila e cursor e reenvia tudo, para nunca vazar dados da conta
+  anterior para a nova. Sair não apaga nada local.
+- **Login:** link mágico + código de 6 dígitos (o link abre no navegador, não no app instalado). O token
+  fica no `localStorage` (gerido pelo supabase-js); dados de treino nunca.
+- **CSP** restritiva no `vercel.json` (`script-src 'self'`, `connect-src` só `self` e `*.supabase.co`, sem
+  `unsafe-eval`/`unsafe-inline` em scripts). O `vite preview` serve os mesmos cabeçalhos e um teste e2e
+  confere que o app inteiro roda sem violações. Para isso o zod roda com `jitless` (ele sondava
+  `new Function`, o que a CSP reporta).
+- **RLS testada** com dois usuários simulados (SQL em `supabase/tests`), e os alertas de segurança do
+  Supabase estão vazios.
+- **Deploy:** `vercel.json` pronto; a publicação depende de decidir de qual repositório/branch a Vercel
+  vai construir (veja o resumo da fase).

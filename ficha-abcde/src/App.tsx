@@ -6,6 +6,7 @@ import type { WorkoutId } from './domain/schemas';
 import { HistoricoTab } from './features/historico/HistoricoTab';
 import { AjustesTab } from './features/ajustes/AjustesTab';
 import { UpdateBanner } from './components/UpdateBanner';
+import { statusLabel, useSync } from './sync/syncContext';
 import { useAppData } from './data/appDataContext';
 import { SessaoScreen } from './features/sessao/SessaoScreen';
 
@@ -21,6 +22,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 export function App() {
   const { active, readOnly } = useAppData();
+  const { status } = useSync();
   const [tab, setTab] = useState<Tab>('treinos');
   const [view, setView] = useState<View>({ kind: 'list' });
 
@@ -42,6 +44,9 @@ export function App() {
     <div className="app">
       <header className="topbar">
         <span className="brand">Ficha ABCDE</span>
+        <span className="sync-status" aria-live="polite">
+          {statusLabel(status)}
+        </span>
       </header>
       {readOnly && (
         <p className="warn banner" role="status">

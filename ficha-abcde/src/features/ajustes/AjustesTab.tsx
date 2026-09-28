@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { SyncSection } from './SyncSection';
 import { useAppData } from '../../data/appDataContext';
 import type { Settings } from '../../domain/schemas';
 import { createAlerts } from '../../pwa/alerts';
@@ -218,15 +219,7 @@ export function AjustesTab() {
         )}
       </section>
 
-      <section className="card" aria-labelledby="sync-title">
-        <h2 id="sync-title" className="small">
-          Sincronização
-        </h2>
-        <p>Salvo neste aparelho.</p>
-        <p className="muted">
-          A sincronização entre aparelhos é opcional e ainda não está ativada.
-        </p>
-      </section>
+      <SyncSection />
 
       <section className="card" aria-labelledby="inst-title">
         <h2 id="inst-title" className="small">

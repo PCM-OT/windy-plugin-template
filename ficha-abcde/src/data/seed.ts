@@ -90,4 +90,5 @@ export const defaultSettings = () => ({
   sound: true,
   vibration: true,
   persistGranted: null,
+  updatedAt: 0,
 });
