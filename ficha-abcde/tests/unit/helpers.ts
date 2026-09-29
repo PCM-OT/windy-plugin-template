@@ -31,6 +31,8 @@ export const active = (p: Partial<ActiveSession> = {}): ActiveSession => ({
       noLoad: false,
       reps: { min: 10, max: 12 },
       machine: '17',
+      catalogId: null,
+      note: '',
     },
   ],
   sets: [set()],

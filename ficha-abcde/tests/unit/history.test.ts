@@ -97,6 +97,8 @@ describe('gráfico de evolução', () => {
           noLoad: true,
           reps: null,
           machine: null,
+          catalogId: null,
+          note: '',
         },
       ],
       sets: [set({ exerciseId: 'A-1', kg: null })],

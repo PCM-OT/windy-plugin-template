@@ -1,5 +1,6 @@
-import { WorkoutSchema } from './schemas';
-import type { Exercise, Plan, Workout } from './schemas';
+import { WORKOUT_LETTERS, WorkoutSchema } from './schemas';
+import type { Exercise, Plan, Workout, WorkoutId } from './schemas';
+import type { CatalogExercise } from '../data/catalog';
 
 export function newExercise(workoutId: string): Exercise {
   return {
@@ -10,6 +11,8 @@ export function newExercise(workoutId: string): Exercise {
     machine: null,
     restSec: 60,
     noLoad: false,
+    catalogId: null,
+    note: '',
   };
 }
 
@@ -65,4 +68,51 @@ export function validateWorkout(w: Workout): string[] {
     }
     return `${i.path.join('.') || 'Treino'}: ${i.message}`;
   });
+}
+
+/** Exercício do catálogo, com a sugestão de séries/repetições/descanso do catálogo. */
+export function addCatalogExercise(w: Workout, c: CatalogExercise): Workout {
+  const e: Exercise = {
+    id: `${w.id}-${crypto.randomUUID().slice(0, 8)}`,
+    name: c.name,
+    sets: c.sets,
+    reps: { min: c.reps[0], max: c.reps[1] },
+    machine: null,
+    restSec: c.restSec,
+    noLoad: Boolean(c.noLoad),
+    catalogId: c.id,
+    note: '',
+  };
+  return { ...w, exercises: [...w.exercises, e] };
+}
+
+/** Exercício criado à mão (fora do catálogo). */
+export function addCustomExercise(
+  w: Workout,
+  input: { name: string; note?: string },
+): Workout {
+  const e: Exercise = {
+    ...newExercise(w.id),
+    name: input.name.trim().slice(0, 120) || 'Novo exercício',
+    note: (input.note ?? '').trim().slice(0, 500),
+  };
+  return { ...w, exercises: [...w.exercises, e] };
+}
+
+/** Primeira letra livre entre A e G (null se a ficha já tem 7 treinos). */
+export const nextFreeLetter = (plan: Plan): WorkoutId | null =>
+  WORKOUT_LETTERS.find((l) => !plan.workouts.some((w) => w.id === l)) ?? null;
+
+/** Acrescenta um treino vazio. As letras existentes não mudam (o histórico continua fazendo sentido). */
+export function addWorkout(plan: Plan): { plan: Plan; id: WorkoutId } | null {
+  const id = nextFreeLetter(plan);
+  if (!id) return null;
+  const w: Workout = { id, name: `Treino ${id}`, muscles: '', exercises: [] };
+  return { plan: { ...plan, workouts: [...plan.workouts, w] }, id };
+}
+
+/** Remove um treino (a ficha sempre mantém pelo menos um). */
+export function removeWorkout(plan: Plan, id: WorkoutId): Plan {
+  if (plan.workouts.length <= 1) return plan;
+  return { ...plan, workouts: plan.workouts.filter((w) => w.id !== id) };
 }

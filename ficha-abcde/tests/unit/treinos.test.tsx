@@ -93,6 +93,10 @@ describe('editor', () => {
       screen.getByRole('button', { name: 'Descer Mobilidade de quadril e tornozelo' }),
     );
     await userEvent.click(screen.getByRole('button', { name: '+ Adicionar exercício' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Adicionar Panturrilha em pé' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: /Concluir/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Remover Leg press' }));
     await userEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Remover' }),
@@ -135,32 +139,5 @@ describe('editor', () => {
     await userEvent.clear(screen.getByLabelText('Exercício 1'));
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/Exercício 1/);
-  });
-});
-
-describe('restaurar ficha original', () => {
-  it('pede confirmação e volta ao seed', async () => {
-    const { repo, view } = setup();
-    await view;
-    await repo.savePlan({ ...(await repo.getPlan()), totalSessions: 12 });
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Restaurar ficha original' }),
-    );
-    await userEvent.click(
-      within(screen.getByRole('dialog')).getByRole('button', { name: 'Restaurar' }),
-    );
-    await waitFor(async () => expect((await repo.getPlan()).totalSessions).toBe(40));
-  });
-  it('cancelar não altera nada', async () => {
-    const { repo, view } = setup();
-    await view;
-    await repo.savePlan({ ...(await repo.getPlan()), totalSessions: 12 });
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Restaurar ficha original' }),
-    );
-    await userEvent.click(
-      within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar' }),
-    );
-    expect((await repo.getPlan()).totalSessions).toBe(12);
   });
 });

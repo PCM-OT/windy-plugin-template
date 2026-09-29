@@ -21,10 +21,13 @@ export function restRemainingMs(endAt: number, now: number, totalMs: number): nu
 }
 
 /** Próximo treino com base na sessão finalizada mais recente. */
-export function nextWorkoutFromHistory(sessions: readonly Session[]): WorkoutId {
+export function nextWorkoutFromHistory(
+  sessions: readonly Session[],
+  order?: readonly WorkoutId[],
+): WorkoutId {
   let last: Session | null = null;
   for (const s of sessions) if (!last || s.endedAt > last.endedAt) last = s;
-  return nextWorkout(last?.workoutId ?? null);
+  return nextWorkout(last?.workoutId ?? null, order);
 }
 
 /** Dia (YYYY-MM-DD) em São Paulo. 23:50 pertence ao dia em que começou. */

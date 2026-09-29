@@ -33,7 +33,7 @@ Abra o site no Chrome (Android) ou Safari (iOS) e use "Adicionar à tela inicial
 
 ## Status
 
-Fases 0–5 concluídas no código (sincronização opcional com Supabase, CSP, `vercel.json`). Falta publicar na Vercel e configurar a URL no Supabase (veja `supabase/README.md`).
+Fases 0–5 concluídas, com contas por e-mail e senha, fichas prontas baseadas em fontes, catálogo de exercícios com dicas e criação manual de exercícios.
 
 ## Ícones do PWA
 

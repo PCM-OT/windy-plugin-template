@@ -4,7 +4,8 @@ import { NumberInput } from '../../components/NumberInput';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { parseReps } from '../../domain/numbers';
 import {
-  addExercise,
+  addCatalogExercise,
+  addCustomExercise,
   moveExercise,
   removeExercise,
   replaceWorkout,
@@ -12,6 +13,7 @@ import {
   validateWorkout,
 } from '../../domain/planEdit';
 import { LIMITS } from '../../domain/schemas';
+import { ExercisePicker } from './ExercisePicker';
 import type { WorkoutId } from '../../domain/schemas';
 
 interface Props {
@@ -26,6 +28,7 @@ export function WorkoutEditor({ id, onDone }: Props) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
   const dirty =
     JSON.stringify(w) !== JSON.stringify(plan.workouts.find((x) => x.id === id));
 
@@ -161,6 +164,14 @@ export function WorkoutEditor({ id, onDone }: Props) {
               />
               <span>Sem carga (mobilidade)</span>
             </label>
+            <label className="field">
+              <span>Anotação ou dica (opcional)</span>
+              <input
+                value={e.note}
+                maxLength={500}
+                onChange={(ev) => patch(e.id, { note: ev.target.value })}
+              />
+            </label>
             <div className="row">
               <button
                 className="btn"
@@ -190,7 +201,7 @@ export function WorkoutEditor({ id, onDone }: Props) {
         ))}
       </ol>
 
-      <button className="btn" onClick={() => setW(addExercise(w))}>
+      <button className="btn" onClick={() => setPicking(true)}>
         + Adicionar exercício
       </button>
 
@@ -219,6 +230,14 @@ export function WorkoutEditor({ id, onDone }: Props) {
           {saving ? 'Salvando…' : 'Salvar'}
         </button>
       </div>
+
+      {picking && (
+        <ExercisePicker
+          onAddCatalog={(c) => setW((cur) => addCatalogExercise(cur, c))}
+          onAddCustom={(input) => setW((cur) => addCustomExercise(cur, input))}
+          onClose={() => setPicking(false)}
+        />
+      )}
 
       {toRemove && (
         <ConfirmDialog

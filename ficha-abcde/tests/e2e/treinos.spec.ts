@@ -22,8 +22,14 @@ test('mostra a ficha, edita um treino e a edição sobrevive ao recarregar', asy
   await page.getByRole('button', { name: 'Treino B, Costas e bíceps' }).click();
   await expect(page.getByRole('heading', { name: /Costas e bíceps/ })).toBeVisible();
 
+  // troca por uma ficha pronta: como a ficha foi editada, pede confirmação
   await page.getByRole('button', { name: '← Treinos' }).click();
-  await page.getByRole('button', { name: 'Restaurar ficha original' }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Restaurar' }).click();
-  await expect(page.getByRole('button', { name: 'Treino B, Superiores' })).toBeVisible();
+  await page.getByRole('button', { name: 'Fichas prontas', exact: true }).click();
+  await page.getByRole('button', { name: /^Ver a ficha Mínimo eficaz/ }).click();
+  await page.getByRole('button', { name: 'Usar esta ficha' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Usar esta ficha' }).click();
+  await expect(page.getByText('Sessões: 0/24')).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Treino A, Corpo inteiro A' }),
+  ).toBeVisible();
 });

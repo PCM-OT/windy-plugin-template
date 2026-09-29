@@ -1,6 +1,41 @@
 import { SCHEMA_VERSION } from '../domain/schemas';
 import type { Exercise, Plan, Workout, WorkoutId } from '../domain/schemas';
 
+// Liga os exercícios da ficha original ao catálogo (para mostrar "Como fazer").
+const CATALOG_BY_NAME: Record<string, string> = {
+  'Mobilidade de quadril e tornozelo': 'mob-quadril-tornozelo',
+  'Mobilidade de ombro': 'mob-ombro',
+  'Cadeira adutora': 'cadeira-adutora',
+  Agachamento: 'agachamento-maquina',
+  'Cadeira extensora': 'cadeira-extensora',
+  'Leg press': 'leg-press',
+  'Mesa flexora': 'mesa-flexora',
+  'Panturrilha sentado': 'panturrilha-sentado',
+  'Remada baixa aberta': 'remada-baixa',
+  'Remada curvada com barra, pegada pronada': 'remada-curvada',
+  'Puxada neutra triângulo': 'puxada-triangulo',
+  'Puxada articulada aberta': 'puxada-frontal',
+  'Crucifixo máquina inverso': 'crucifixo-inverso',
+  'Bíceps máquina alternado': 'rosca-maquina',
+  'Abdominal máquina': 'abdominal-maquina',
+  'Cadeira abdutora': 'cadeira-abdutora',
+  'Cadeira flexora': 'cadeira-flexora',
+  'Flexora unilateral máquina': 'cadeira-flexora',
+  'Agachamento sumô com halter': 'agachamento-sumo-halter',
+  'Peck deck': 'peck-deck',
+  'Supino declinado máquina': 'supino-declinado-maquina',
+  'Supino máquina': 'supino-maquina',
+  'Tríceps mergulho máquina': 'triceps-mergulho-maquina',
+  'Tríceps francês com corda na polia': 'triceps-frances-corda',
+  'Desenvolvimento máquina neutro': 'desenvolvimento-maquina',
+  'Remada baixa supinada': 'remada-baixa',
+  Voador: 'peck-deck',
+  'Elevação lateral com halteres': 'elevacao-lateral',
+  'Elevação frontal com corda na polia baixa': 'elevacao-frontal-corda',
+  'Tríceps pulley barra reta': 'triceps-pulley',
+  'Encolhimento de ombros': 'encolhimento',
+};
+
 type Reps = [number, number] | null;
 // [nome, séries, reps, máquina, descanso (s), sem carga?]
 type Row = [string, number, Reps, string | null, number, boolean?];
@@ -18,6 +53,8 @@ function workout(id: WorkoutId, name: string, muscles: string, rows: Row[]): Wor
       machine,
       restSec,
       noLoad: noLoad ?? false,
+      catalogId: CATALOG_BY_NAME[n] ?? null,
+      note: '',
     }),
   );
   return { id, name, muscles, exercises };
@@ -31,6 +68,8 @@ export function seedPlan(now: number): Plan {
   return {
     id: 'plan',
     schemaVersion: SCHEMA_VERSION,
+    name: 'Ficha de academia (ABCDE)',
+    source: null,
     validUntil: SEED_VALID_UNTIL,
     totalSessions: SEED_TOTAL_SESSIONS,
     updatedAt: now,

@@ -59,6 +59,8 @@ describe('aba Histórico', () => {
             noLoad: false,
             reps: null,
             machine: null,
+            catalogId: null,
+            note: '',
           },
           {
             id: 'A-3',
@@ -67,6 +69,8 @@ describe('aba Histórico', () => {
             noLoad: false,
             reps: null,
             machine: null,
+            catalogId: null,
+            note: '',
           },
         ],
       }),

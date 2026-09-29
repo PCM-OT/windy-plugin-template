@@ -4,6 +4,8 @@ import AxeBuilder from '@axe-core/playwright';
 
 async function finishWorkoutA(page: Page) {
   await page.getByRole('button', { name: 'Iniciar treino A' }).click();
+  // espera a tela do treino (o início grava no banco antes de abrir)
+  await expect(page.locator('button.check-btn').first()).toBeVisible();
   for (let i = 0; i < 40; i++) {
     const pending = page.locator('button.check-btn[aria-pressed="false"]');
     if ((await pending.count()) === 0) break;

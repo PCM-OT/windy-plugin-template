@@ -2,9 +2,14 @@ import { useState } from 'react';
 import { TreinosTab } from './features/treinos/TreinosTab';
 import { WorkoutEditor } from './features/treinos/WorkoutEditor';
 import { WorkoutPreview } from './features/treinos/WorkoutPreview';
+import { TemplatesScreen } from './features/treinos/TemplatesScreen';
+import { TemplateDetail } from './features/treinos/TemplateDetail';
+import { PlanMetaEditor } from './features/treinos/PlanMetaEditor';
+import { starterPlan } from './data/templates';
 import type { WorkoutId } from './domain/schemas';
 import { HistoricoTab } from './features/historico/HistoricoTab';
 import { AjustesTab } from './features/ajustes/AjustesTab';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import { UpdateBanner } from './components/UpdateBanner';
 import { statusLabel, useSync } from './sync/syncContext';
 import { useAppData } from './data/appDataContext';
@@ -12,7 +17,12 @@ import { SessaoScreen } from './features/sessao/SessaoScreen';
 
 type Tab = 'treinos' | 'historico' | 'ajustes';
 type View =
-  { kind: 'list' } | { kind: 'preview'; id: WorkoutId } | { kind: 'edit'; id: WorkoutId };
+  | { kind: 'list' }
+  | { kind: 'preview'; id: WorkoutId }
+  | { kind: 'edit'; id: WorkoutId }
+  | { kind: 'templates' }
+  | { kind: 'template'; id: string }
+  | { kind: 'meta' };
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'treinos', label: 'Treinos' },
@@ -21,10 +31,27 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export function App() {
-  const { active, readOnly } = useAppData();
+  const { active, readOnly, plan, savePlan, now } = useAppData();
   const { status } = useSync();
   const [tab, setTab] = useState<Tab>('treinos');
   const [view, setView] = useState<View>({ kind: 'list' });
+  const [confirmScratch, setConfirmScratch] = useState(false);
+  const [scratchError, setScratchError] = useState<string | null>(null);
+
+  // "Montar do zero": começa com um treino A vazio e abre o editor.
+  const startScratch = async () => {
+    try {
+      await savePlan(starterPlan(now()));
+      setView({ kind: 'edit', id: 'A' });
+    } catch (e) {
+      setScratchError(
+        `Não foi possível criar a ficha: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  };
+  const hasOwnPlan =
+    plan.updatedAt > 0 && plan.workouts.some((w) => w.exercises.length > 0);
+  const onScratch = () => (hasOwnPlan ? setConfirmScratch(true) : void startScratch());
 
   // Sessão em andamento tem prioridade: ao reabrir o app, retoma exatamente onde estava.
   if (active && readOnly) {
@@ -57,7 +84,49 @@ export function App() {
       <UpdateBanner />
       <main>
         {tab === 'treinos' && view.kind === 'list' && (
-          <TreinosTab onView={(id) => setView({ kind: 'preview', id })} />
+          <TreinosTab
+            onView={(id) => setView({ kind: 'preview', id })}
+            onEdit={(id) => setView({ kind: 'edit', id })}
+            onTemplates={() => setView({ kind: 'templates' })}
+            onScratch={onScratch}
+            onMeta={() => setView({ kind: 'meta' })}
+          />
+        )}
+        {tab === 'treinos' && view.kind === 'templates' && (
+          <TemplatesScreen
+            first={plan.updatedAt === 0}
+            onBack={() => setView({ kind: 'list' })}
+            onOpen={(id) => setView({ kind: 'template', id })}
+            onScratch={onScratch}
+          />
+        )}
+        {tab === 'treinos' && view.kind === 'template' && (
+          <TemplateDetail
+            id={view.id}
+            onBack={() => setView({ kind: 'templates' })}
+            onApplied={() => setView({ kind: 'list' })}
+          />
+        )}
+        {tab === 'treinos' && view.kind === 'meta' && (
+          <PlanMetaEditor onDone={() => setView({ kind: 'list' })} />
+        )}
+        {scratchError && (
+          <p className="warn banner" role="alert">
+            {scratchError}
+          </p>
+        )}
+        {confirmScratch && (
+          <ConfirmDialog
+            title="Montar uma ficha do zero?"
+            message={`Sua ficha atual (“${plan.name}”) será substituída por uma ficha vazia. O histórico não muda. Se quiser guardar a atual, exporte um backup em Ajustes antes.`}
+            confirmLabel="Começar do zero"
+            danger
+            onCancel={() => setConfirmScratch(false)}
+            onConfirm={() => {
+              setConfirmScratch(false);
+              void startScratch();
+            }}
+          />
         )}
         {tab === 'treinos' && view.kind === 'preview' && (
           <WorkoutPreview

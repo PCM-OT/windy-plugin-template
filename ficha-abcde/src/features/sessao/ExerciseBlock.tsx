@@ -1,4 +1,7 @@
+import { HowTo } from '../../components/HowTo';
+import { hasHowTo } from '../../data/howto';
 import { NumberInput } from '../../components/NumberInput';
+import { useState } from 'react';
 import { formatReps } from '../../domain/format';
 import { parseKg, parseReps } from '../../domain/numbers';
 import type { LastSet } from '../../domain/session';
@@ -25,6 +28,7 @@ const fmtSet = (s: { kg: number | null; reps: number | null }, noLoad: boolean) 
 export function ExerciseBlock(p: Props) {
   const { exercise: e, sets } = p;
   const doneCount = sets.filter((s) => s.done).length;
+  const [tips, setTips] = useState(false);
   return (
     <section className={`card ex ${p.done ? 'ex-done' : ''}`} aria-label={e.name}>
       <button className="ex-head" aria-expanded={p.open} onClick={p.onToggleOpen}>
@@ -95,6 +99,18 @@ export function ExerciseBlock(p: Props) {
               </button>
             </div>
           ))}
+          {hasHowTo(e.catalogId, e.note) && (
+            <>
+              <button
+                className="btn"
+                aria-expanded={tips}
+                onClick={() => setTips((v) => !v)}
+              >
+                Como fazer
+              </button>
+              {tips && <HowTo catalogId={e.catalogId} note={e.note} />}
+            </>
+          )}
           <div className="row">
             <button className="btn" onClick={p.onRemoveSet} disabled={sets.length <= 1}>
               − Série

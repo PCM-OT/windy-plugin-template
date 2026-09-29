@@ -196,3 +196,36 @@ Descanso = `endAt` absoluto; restante = `max(0, endAt - now)`, recalculado a cad
 - **Sessão trocada por fora** (outra conta no navegador): abre o banco da nova conta; os dados da anterior
   não são enviados a ela.
 - **Um cliente Supabase por página** (cache de módulo): vários clientes disputam o mesmo login guardado.
+
+## Fichas prontas, catálogo e dicas (várias pessoas)
+
+- **Ficha flexível:** de 1 a 7 treinos (A–G), nome, meta de sessões e validade **opcionais**. Ficha antiga (5 treinos,
+  com validade e meta) continua válida (campos novos têm padrão). A rotação segue a ordem da ficha; se o
+  último treino feito não existe mais na ficha, recomeça no primeiro. Letras nunca são renumeradas
+  (o histórico continua fazendo sentido); um novo treino usa a primeira letra livre.
+- **Boas-vindas:** enquanto a ficha ainda é o exemplo que veio com o app (`updatedAt = 0`) e não há treinos
+  feitos, a aba Treinos convida a escolher uma ficha pronta, montar do zero ou manter o exemplo. O exemplo
+  (ficha real de academia) também está na lista de fichas prontas, para não haver perda ao trocar.
+- **Fichas prontas** (`src/data/templates.ts`): 7 modelos montados só com exercícios do catálogo, cada um com
+  as fontes em que se baseia. Testes garantem: schema válido, exercícios existentes no catálogo, fontes
+  existentes, iniciantes com ≤ 3 dias/semana e intermediários com 3–4 (faixas do ACSM 2009).
+  Aplicar uma ficha cria **cópia** com ids novos e pede confirmação se o usuário já tem ficha própria; o
+  histórico nunca é alterado.
+- **Catálogo** (`src/data/catalog.ts`): 61 exercícios em 13 grupos, com passo a passo, dicas/erros comuns e
+  sugestão de séries/repetições/descanso. Embutido no app (funciona offline). Os textos foram escritos para
+  este app, em português, seguindo a técnica padrão; **não copiam** as referências.
+- **Exercício manual:** quando não acha no catálogo, o usuário cria um exercício com nome e anotação própria
+  (sem vínculo com o catálogo). As dicas aparecem na pré-visualização, na escolha de exercícios e **durante o
+  treino** ("Como fazer"). O histórico guarda `catalogId`/`note` no snapshot do exercício.
+- **Fontes** (`src/data/sources.ts`): diretrizes (ACSM 2009, HHS 2018, Ministério da Saúde 2021), estudos
+  (Schoenfeld 2016 frequência, 2017 volume, 2016 descanso) e referências de técnica (ACE, ExRx, NSCA).
+  **Como foram verificadas:** por busca na web (título, veículo, ano, DOI e endereço conferidos nos
+  resultados). As páginas em si não puderam ser abertas neste ambiente (bloqueio de rede), então as
+  afirmações citadas são as que os resultados da busca confirmaram (ex.: ACSM: 2–3 dias iniciantes, 3–4
+  intermediários, 1–3 séries de 8–12; HHS e Ministério da Saúde: fortalecimento ≥ 2 dias/semana;
+  Schoenfeld 2016: cada grande grupo ≥ 2×/semana). As fichas seguem esses princípios; **não** foram
+  aprovadas pelos autores e não são prescrição individual (aviso na tela e em Ajustes).
+- **Tamanho:** o catálogo e as fichas somam ~14 KB gzip; o JS inicial ficou em ~138 KB (limite 150 KB). Se
+  crescer mais, carregar `templates`/`sources` sob demanda.
+- **Teste instável corrigido:** o e2e "offline" às vezes falhava porque marcava as séries antes de a tela do
+  treino abrir (o início grava no banco antes). O teste agora espera a tela do treino.

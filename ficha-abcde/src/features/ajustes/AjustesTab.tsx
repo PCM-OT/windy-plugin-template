@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { SyncSection } from './SyncSection';
+import { SourcesList } from '../../components/SourcesList';
 import { useAppData } from '../../data/appDataContext';
 import type { Settings } from '../../domain/schemas';
 import { createAlerts } from '../../pwa/alerts';
@@ -217,6 +218,17 @@ export function AjustesTab() {
             estarem inválidos (isolados, sem afetar o app).
           </p>
         )}
+      </section>
+
+      <section className="card" aria-labelledby="fontes-title">
+        <h2 id="fontes-title" className="small">
+          Fontes e referências
+        </h2>
+        <p className="muted">
+          As fichas prontas e os textos de execução seguem os princípios destas
+          referências.
+        </p>
+        <SourcesList />
       </section>
 
       <SyncSection />

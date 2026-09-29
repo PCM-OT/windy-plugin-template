@@ -45,3 +45,64 @@ describe('edição da ficha', () => {
     expect(q.workouts[0]).toBe(p.workouts[0]);
   });
 });
+
+import { CATALOG, getCatalogExercise } from '../../src/data/catalog';
+import { seedPlan as _seed } from '../../src/data/seed';
+import {
+  addCatalogExercise,
+  addCustomExercise,
+  addWorkout,
+  nextFreeLetter,
+  removeWorkout,
+} from '../../src/domain/planEdit';
+import { starterPlan } from '../../src/data/templates';
+
+describe('catálogo, treinos e exercícios manuais', () => {
+  it('adiciona do catálogo com as sugestões e o vínculo para as dicas', () => {
+    const w = starterPlan(1).workouts[0]!;
+    const c = getCatalogExercise('leg-press')!;
+    const r = addCatalogExercise(w, c);
+    expect(r.exercises[0]).toMatchObject({
+      name: 'Leg press',
+      catalogId: 'leg-press',
+      sets: c.sets,
+      restSec: c.restSec,
+      reps: { min: c.reps[0], max: c.reps[1] },
+    });
+    expect(validateWorkout(r)).toEqual([]);
+  });
+  it('exercício manual: nome obrigatório com padrão, anotação opcional, sem vínculo', () => {
+    const w = starterPlan(1).workouts[0]!;
+    const r = addCustomExercise(
+      addCustomExercise(w, { name: '  Meu exercício  ', note: ' cuidado com o ombro ' }),
+      { name: '   ' },
+    );
+    expect(r.exercises[0]).toMatchObject({
+      name: 'Meu exercício',
+      catalogId: null,
+      note: 'cuidado com o ombro',
+    });
+    expect(r.exercises[1]!.name).toBe('Novo exercício');
+    expect(validateWorkout(r)).toEqual([]);
+  });
+  it('novo treino usa a primeira letra livre, sem renumerar; máximo de 7', () => {
+    let p = starterPlan(1);
+    expect(nextFreeLetter(p)).toBe('B');
+    for (let i = 0; i < 6; i++) p = addWorkout(p)!.plan;
+    expect(p.workouts.map((x) => x.id)).toEqual(['A', 'B', 'C', 'D', 'E', 'F', 'G']);
+    expect(addWorkout(p)).toBeNull();
+    const menosB = removeWorkout(p, 'B');
+    expect(menosB.workouts.map((x) => x.id)).toEqual(['A', 'C', 'D', 'E', 'F', 'G']);
+    expect(addWorkout(menosB)!.id).toBe('B'); // reaproveita a letra livre
+  });
+  it('a ficha nunca fica sem treinos', () => {
+    const p = starterPlan(1);
+    expect(removeWorkout(p, 'A')).toBe(p);
+  });
+  it('a ficha de exemplo continua ligada ao catálogo', () => {
+    const ex = _seed(1).workouts.flatMap((w) => w.exercises);
+    expect(ex.filter((e) => e.catalogId).length).toBe(ex.length);
+    for (const e of ex) expect(getCatalogExercise(e.catalogId)).toBeDefined();
+    expect(CATALOG.length).toBeGreaterThan(50);
+  });
+});

@@ -5,7 +5,9 @@ z.config({ jitless: true });
 
 export const SCHEMA_VERSION = 1;
 
-export const WorkoutIdSchema = z.enum(['A', 'B', 'C', 'D', 'E']);
+/** Uma ficha tem de 1 a 7 treinos (A–G). */
+export const WORKOUT_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'] as const;
+export const WorkoutIdSchema = z.enum(WORKOUT_LETTERS);
 export type WorkoutId = z.infer<typeof WorkoutIdSchema>;
 
 export const LIMITS = { kgMax: 500, repsMax: 200, restMaxSec: 600, setsMax: 20 } as const;
@@ -26,6 +28,10 @@ export const ExerciseSchema = z.object({
   restSec: z.number().int().min(0).max(LIMITS.restMaxSec),
   /** Mobilidade: só registra repetições. */
   noLoad: z.boolean(),
+  /** Liga ao catálogo de exercícios (dicas de execução). null = exercício criado à mão. */
+  catalogId: z.string().nullable().default(null),
+  /** Anotação/dica do próprio usuário (aparece no treino). */
+  note: z.string().max(500).default(''),
 });
 export type Exercise = z.infer<typeof ExerciseSchema>;
 
@@ -40,10 +46,25 @@ export type Workout = z.infer<typeof WorkoutSchema>;
 export const PlanSchema = z.object({
   id: z.literal('plan'),
   schemaVersion: z.number().int(),
-  /** YYYY-MM-DD */
-  validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  totalSessions: z.number().int().min(1).max(1000),
-  workouts: z.array(WorkoutSchema).length(5),
+  name: z.string().trim().min(1).max(80).default('Minha ficha'),
+  /** Ficha pronta de origem (se veio de uma). */
+  source: z
+    .object({ templateId: z.string(), title: z.string() })
+    .nullable()
+    .default(null),
+  /** YYYY-MM-DD. Opcional: nem toda ficha tem validade. */
+  validUntil: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .default(null),
+  /** Meta de sessões. Opcional. */
+  totalSessions: z.number().int().min(1).max(1000).nullable().default(null),
+  workouts: z
+    .array(WorkoutSchema)
+    .min(1)
+    .max(7)
+    .refine((w) => new Set(w.map((x) => x.id)).size === w.length, 'treinos repetidos'),
   updatedAt: z.number(),
 });
 export type Plan = z.infer<typeof PlanSchema>;
@@ -70,6 +91,8 @@ export const ExerciseSnapshotSchema = z.object({
     .nullable()
     .default(null),
   machine: z.string().nullable().default(null),
+  catalogId: z.string().nullable().default(null),
+  note: z.string().default(''),
 });
 export type ExerciseSnapshot = z.infer<typeof ExerciseSnapshotSchema>;
 

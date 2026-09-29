@@ -54,6 +54,8 @@ export function buildSession(
       noLoad: e.noLoad,
       reps: e.reps,
       machine: e.machine,
+      catalogId: e.catalogId,
+      note: e.note,
     })),
     sets,
     note: '',

@@ -18,6 +18,8 @@ test('offline: abre, treina o treino inteiro e finaliza sem rede', async ({
   await expect(page.getByText('Próximo treino')).toBeVisible();
 
   await page.getByRole('button', { name: 'Iniciar treino A' }).click();
+  // espera a tela do treino (o início grava no banco antes de abrir)
+  await expect(page.locator('button.check-btn').first()).toBeVisible();
   await expect(page.getByRole('timer')).toHaveCount(0);
 
   // marca todas as séries; o exercício seguinte abre sozinho
