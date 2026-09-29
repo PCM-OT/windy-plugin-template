@@ -6,8 +6,10 @@ import { FichaDB } from '../../src/data/db';
 import {
   dbNameFor,
   hasLocalData,
+  loadGuest,
   loadProfile,
   moveLocalData,
+  saveGuest,
   saveProfile,
 } from '../../src/data/profile';
 import { Root } from '../../src/Root';
@@ -50,6 +52,7 @@ async function loginUI(email: string, password: string) {
 }
 
 function mount(server = new FakeServer(), initial?: { id: string; email: string }) {
+  saveGuest(true); // usa o app sem conta; a tela de login tem testes próprios
   const { backend, set } = fakeBackend(server, initial ?? null);
   render(<Root loadBackend={async () => backend} configured />);
   return { server, backend, set };
@@ -100,7 +103,7 @@ describe('mensagens de erro do login', () => {
       'E-mail ou senha incorretos.',
     );
     expect(friendlyAuthError('Email not confirmed')).toMatch(/confirmar o e-mail/);
-    expect(friendlyAuthError('email rate limit exceeded')).toMatch(/Muitos e-mails/);
+    expect(friendlyAuthError('email rate limit exceeded')).toMatch(/limite de envios/);
     expect(
       friendlyAuthError(
         'For security purposes, you can only request this after 49 seconds.',
@@ -201,12 +204,14 @@ describe('contas diferentes no mesmo aparelho', () => {
 
     await goAjustes();
     await userEvent.click(await screen.findByRole('button', { name: 'Sair' }));
-    // agora anônimo: nenhum treino da Ana aparece
-    expect(await screen.findByText('Sessões: 0/40')).toBeInTheDocument();
+    // saiu: volta a tela de login, e nenhum treino da Ana aparece
+    expect(
+      await screen.findByRole('heading', { name: 'Entre na sua conta' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Sessões: 2/40')).toBeNull();
     expect(loadProfile()).toBeNull();
 
     // Bia entra no mesmo aparelho
-    await goAjustes();
     await loginUI('bia@exemplo.com', ACCOUNTS['bia@exemplo.com']!.password);
     expect(await screen.findByText('Sessões: 0/40')).toBeInTheDocument();
     expect(await sessionIds(U1)).toEqual(['treino-da-ana-1', 'treino-da-ana-2']); // intactos
@@ -215,7 +220,9 @@ describe('contas diferentes no mesmo aparelho', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Sair' }));
 
     // Ana volta e reencontra tudo
-    await goAjustes();
+    expect(
+      await screen.findByRole('heading', { name: 'Entre na sua conta' }),
+    ).toBeInTheDocument();
     await loginUI('ana@exemplo.com', ACCOUNTS['ana@exemplo.com']!.password);
     expect(await screen.findByText('Sessões: 2/40')).toBeInTheDocument();
   });
@@ -259,5 +266,109 @@ describe('contas diferentes no mesmo aparelho', () => {
     await waitFor(async () => expect(await Dexie.exists(U1)).toBe(false));
     expect(server.get('u1', 'sessions', 'a')).toBeDefined();
     expect(loadProfile()).toBeNull();
+  });
+});
+
+describe('tela de login no primeiro acesso', () => {
+  const renderRoot = (server = new FakeServer(), configured = true) => {
+    const { backend } = fakeBackend(server, null);
+    render(<Root loadBackend={async () => backend} configured={configured} />);
+    return { server, backend };
+  };
+
+  it('sem conta e sem ter escolhido, mostra o login (sem abas nem treino)', async () => {
+    renderRoot();
+    expect(
+      await screen.findByRole('heading', { name: 'Entre na sua conta' }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('E-mail')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Continuar sem conta' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Seções' })).toBeNull();
+    expect(screen.queryByText(/Próximo treino/)).toBeNull();
+  });
+
+  it('"Continuar sem conta" abre o app e a escolha é lembrada no próximo acesso', async () => {
+    renderRoot();
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Continuar sem conta' }),
+    );
+    expect(await screen.findByText(/Próximo treino/)).toBeInTheDocument();
+    expect(loadGuest()).toBe(true);
+    document.body.innerHTML = '';
+    renderRoot();
+    expect(await screen.findByText(/Próximo treino/)).toBeInTheDocument(); // sem pedir login de novo
+  });
+
+  it('entrar pela tela de login com treinos no aparelho oferece vincular à conta', async () => {
+    await seedDb(ANON, ['antigo']);
+    const { server } = renderRoot();
+    await screen.findByRole('heading', { name: 'Entre na sua conta' });
+    await loginUI('ana@exemplo.com', ACCOUNTS['ana@exemplo.com']!.password);
+    const dlg = await screen.findByRole('dialog');
+    await userEvent.click(within(dlg).getByRole('button', { name: 'Vincular à conta' }));
+    expect(await screen.findByText('Sessões: 1/40')).toBeInTheDocument();
+    await waitFor(() => expect(server.get('u1', 'sessions', 'antigo')).toBeDefined());
+    expect(loadProfile()?.userId).toBe('u1');
+  });
+
+  it('conta nova entrando pela tela de login vai direto para o app', async () => {
+    renderRoot();
+    await screen.findByRole('heading', { name: 'Entre na sua conta' });
+    await loginUI('bia@exemplo.com', ACCOUNTS['bia@exemplo.com']!.password);
+    expect(await screen.findByText(/Próximo treino/)).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Seções' })).toBeInTheDocument();
+  });
+
+  it('não aparece sem configuração da conta, nem para quem já tem conta neste aparelho', async () => {
+    renderRoot(new FakeServer(), false);
+    expect(await screen.findByText(/Próximo treino/)).toBeInTheDocument();
+    document.body.innerHTML = '';
+    await wipeAll();
+    saveProfile({ userId: 'u1', email: 'ana@exemplo.com' });
+    renderRoot();
+    expect(await screen.findByText(/Próximo treino/)).toBeInTheDocument();
+  });
+
+  it('nunca esconde um treino em andamento', async () => {
+    const db = new FichaDB(ANON);
+    const { session: s } = await import('./helpers');
+    const done = s({ id: 'em-andamento' });
+    const {
+      rest: _r,
+      updatedAt: _u,
+      ...rest
+    } = { ...done, rest: null, updatedAt: 1 } as never as Record<string, unknown>;
+    await db.activeSession.put({
+      ...(rest as object),
+      slot: 'current',
+      rest: null,
+      updatedAt: 1,
+    } as never);
+    db.close();
+    renderRoot();
+    expect(
+      await screen.findByText('Treino A', { selector: '.brand' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Entre na sua conta' })).toBeNull();
+  });
+
+  it('erro de limite de e-mail aparece em português, com o que fazer', async () => {
+    const { backend } = renderRoot();
+    (
+      backend.signUp as unknown as { mockRejectedValueOnce: (e: Error) => void }
+    ).mockRejectedValueOnce(
+      new Error(
+        'O serviço de e-mail atingiu o limite de envios (limite do provedor). Tente de novo em cerca de uma hora.',
+      ),
+    );
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Quero criar conta' }),
+    );
+    await userEvent.type(screen.getByLabelText('E-mail'), 'nova@exemplo.com');
+    await userEvent.type(screen.getByLabelText(/Senha \(mínimo 8/), 'senha-forte-1');
+    await userEvent.click(screen.getByRole('button', { name: 'Criar conta' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/limite de envios/);
   });
 });

@@ -781,3 +781,7 @@ button[aria-pressed='true'].btn {
 .numbered {
   counter-reset: n;
 }
+
+.login {
+  padding-top: 24px;
+}

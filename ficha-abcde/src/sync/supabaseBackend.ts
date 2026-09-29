@@ -20,7 +20,7 @@ export function friendlyAuthError(message: string): string {
     return 'Este e-mail já tem conta. Use “Entrar”.';
   if (wait) return `Aguarde ${wait[1]} segundos para pedir outro e-mail.`;
   if (m.includes('rate limit'))
-    return 'Muitos e-mails enviados em pouco tempo. Aguarde alguns minutos e tente de novo, ou use “Entrar” com a senha.';
+    return 'O serviço de e-mail atingiu o limite de envios (limite do provedor). Tente de novo em cerca de uma hora. Se você já criou a conta, toque em “Já tenho conta” e entre com a senha.';
   if (m.includes('password should be') || m.includes('weak'))
     return 'Senha fraca demais: use pelo menos 8 caracteres.';
   if (m.includes('same password')) return 'A nova senha precisa ser diferente da atual.';

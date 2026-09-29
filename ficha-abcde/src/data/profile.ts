@@ -37,6 +37,26 @@ export function saveProfile(p: Profile | null) {
   }
 }
 
+// "Continuar sem conta": lembra a escolha para não mostrar a tela de login de novo neste aparelho.
+const GUEST_KEY = 'ficha-abcde:guest';
+
+export function loadGuest(): boolean {
+  try {
+    return localStorage.getItem(GUEST_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function saveGuest(v: boolean) {
+  try {
+    if (v) localStorage.setItem(GUEST_KEY, '1');
+    else localStorage.removeItem(GUEST_KEY);
+  } catch {
+    /* sem localStorage: a tela de login volta a aparecer, sem perder dados */
+  }
+}
+
 export const dbNameFor = (p: Pick<Profile, 'userId'> | null) =>
   p ? `ficha-abcde-u-${p.userId}` : 'ficha-abcde';
 

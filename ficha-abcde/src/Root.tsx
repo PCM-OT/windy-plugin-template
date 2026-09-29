@@ -9,10 +9,15 @@ import {
   moveLocalData,
   openHandle,
   saveProfile,
+  loadGuest,
+  saveGuest,
 } from './data/profile';
 import type { Handle, Profile } from './data/profile';
 import { ensurePersistence } from './pwa/storage';
+import { LoginScreen } from './features/login/LoginScreen';
+import { useAppData } from './data/appDataContext';
 import { SyncProvider } from './sync/SyncProvider';
+import { useSync } from './sync/syncContext';
 import type { SyncBackend, SyncUser } from './sync/types';
 
 interface Props {
@@ -59,6 +64,7 @@ export function Root({ loadBackend, configured }: Props) {
   const onLogout = useCallback(
     (wipe: boolean) => {
       const old = handle;
+      saveGuest(false); // saiu da conta: o próximo acesso começa pela tela de login
       switchTo(null);
       // Apaga depois que a árvore trocou de banco (senão a exclusão espera as conexões abertas).
       if (wipe && userKey)
@@ -104,7 +110,9 @@ export function Root({ loadBackend, configured }: Props) {
           configured={configured}
         >
           <PersistOnce handle={handle} />
-          <App />
+          <Gate profile={profile}>
+            <App />
+          </Gate>
           {error && (
             <p className="warn banner" role="alert">
               {error}
@@ -134,4 +142,36 @@ function PersistOnce({ handle }: { handle: Handle }) {
     );
   });
   return null;
+}
+
+/**
+ * Primeiro acesso: sem conta e sem ter escolhido "continuar sem conta", mostra a tela de login.
+ * Nunca esconde um treino em andamento nem aparece se a conta não estiver configurada neste build.
+ */
+function Gate({
+  profile,
+  children,
+}: {
+  profile: Profile | null;
+  children: React.ReactNode;
+}) {
+  const { configured, user } = useSync();
+  const { active } = useAppData();
+  const [guest, setGuest] = useState(loadGuest);
+  if (!configured || profile || guest || active) return <>{children}</>;
+  if (user) {
+    return (
+      <main className="screen" role="status">
+        <p>Conectado. Preparando seus treinos…</p>
+      </main>
+    );
+  }
+  return (
+    <LoginScreen
+      onGuest={() => {
+        saveGuest(true);
+        setGuest(true);
+      }}
+    />
+  );
 }

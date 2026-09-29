@@ -229,3 +229,15 @@ Descanso = `endAt` absoluto; restante = `max(0, endAt - now)`, recalculado a cad
   crescer mais, carregar `templates`/`sources` sob demanda.
 - **Teste instável corrigido:** o e2e "offline" às vezes falhava porque marcava as séries antes de a tela do
   treino abrir (o início grava no banco antes). O teste agora espera a tela do treino.
+
+## Tela de login no primeiro acesso
+
+- Com a conta configurada no build, quem abre o app sem conta e sem ter escolhido "Continuar sem conta" vê a
+  **tela de login** (entrar, criar conta, entrar sem senha). "Continuar sem conta" mantém o app 100% local
+  (offline) e a escolha é lembrada (`localStorage`, só um sinalizador).
+- **Sair da conta volta à tela de login** (o próximo acesso é de outra pessoa). A tela nunca aparece sem
+  configuração da conta, para quem já tem conta neste aparelho, nem por cima de um treino em andamento.
+- Quem entra com treinos no aparelho recebe a pergunta de vincular à conta (ver "Contas").
+- **Limite de e-mail do Supabase:** o envio embutido tem limite baixo por hora e só afeta _criar conta_
+  (confirmação) e "entrar sem senha". Se estourar, o app explica em português. Para várias pessoas, resolver
+  no painel: desligar "Confirm email" ou configurar SMTP próprio (`supabase/README.md`).
