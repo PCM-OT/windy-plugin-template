@@ -27,3 +27,10 @@ VITE_SUPABASE_PUBLISHABLE_KEY=...   # pública por desenho; a RLS protege os dad
    abre no navegador, não no app instalado, principalmente no iPhone).
 3. O e-mail embutido do Supabase tem limite baixo de envios por hora; para uso contínuo, configure um
    SMTP próprio em Authentication → SMTP.
+
+## Login por e-mail e senha
+
+O app usa e-mail + senha. Criar a conta envia **um** e-mail de confirmação; entrar depois não envia nada.
+Para evitar até esse e-mail (uso pessoal), desligue **Authentication → Sign In / Providers → Email →
+Confirm email** (qualquer pessoa poderá criar conta sem confirmar o e-mail). O limite de envio do e-mail
+embutido do Supabase é baixo (`429 email rate limit exceeded`); para uso contínuo configure um SMTP próprio.

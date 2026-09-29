@@ -179,3 +179,20 @@ Descanso = `endAt` absoluto; restante = `max(0, endAt - now)`, recalculado a cad
   Supabase estão vazios.
 - **Deploy:** `vercel.json` pronto; a publicação depende de decidir de qual repositório/branch a Vercel
   vai construir (veja o resumo da fase).
+
+## Contas (várias pessoas, mesmo aparelho)
+
+- **Login por e-mail + senha** (Supabase Auth). O link mágico gasta e-mail a cada entrada e bate no limite do
+  envio embutido do Supabase (~2/h, erro `429 email rate limit exceeded`); com senha só a criação da conta
+  envia e-mail (confirmação). Link/código continuam como "Entrar sem senha" (útil para recuperar a senha:
+  entra-se assim e define-se uma nova em Ajustes).
+- **Um banco local por conta** (`ficha-abcde-u-<userId>`), além do banco original (perfil "anônimo", sem
+  login). Só o _id/e-mail do perfil ativo_ fica no `localStorage`; dados de treino continuam só no
+  IndexedDB. Duas pessoas no mesmo celular nunca misturam treinos e nada se apaga ao trocar de conta.
+- **Vincular treinos do aparelho:** ao entrar numa conta, se o perfil anônimo tiver treinos, o app pergunta
+  se devem ser vinculados à conta. "Vincular" _move_ os dados (união por id, o mais novo vence na ficha) e o
+  motor os envia à nuvem da conta; "Começar do zero" mantém os treinos guardados no perfil anônimo.
+- **Sair** não apaga nada. **Sair e apagar dados deste aparelho** remove o banco da conta (a nuvem fica).
+- **Sessão trocada por fora** (outra conta no navegador): abre o banco da nova conta; os dados da anterior
+  não são enviados a ela.
+- **Um cliente Supabase por página** (cache de módulo): vários clientes disputam o mesmo login guardado.

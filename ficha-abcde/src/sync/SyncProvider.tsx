@@ -18,6 +18,13 @@ import type { SyncBackend, SyncUser } from './types';
 
 interface Props {
   db: FichaDB;
+  /**
+   * Conta dona do banco local aberto (null = perfil anônimo). Só sincroniza quando o usuário logado é
+   * o dono do banco; se for outro, avisa via `onLogin` para o app trocar de perfil. Omitido = sem trava.
+   */
+  profileUserId?: string | null;
+  onLogin?: (u: SyncUser) => void;
+  onLogout?: (wipe: boolean) => void;
   /** Injetável nos testes. Padrão: Supabase, se o build tiver URL e chave. */
   loadBackend?: () => Promise<SyncBackend | null>;
   configured?: boolean;
@@ -33,6 +40,9 @@ const defaultLoad = async () =>
  */
 export function SyncProvider({
   db,
+  profileUserId,
+  onLogin,
+  onLogout,
   loadBackend = defaultLoad,
   configured = syncConfigured,
   children,
@@ -64,8 +74,26 @@ export function SyncProvider({
     if (configured && hasStoredSession()) void ensureBackend().catch(() => undefined);
   }, [configured, ensureBackend]);
 
-  // Motor: liga quando há backend + usuário + aba líder.
-  const userId = user?.id ?? null;
+  // Login detectado com outro perfil aberto: o app decide (vincular treinos locais, trocar de banco).
+  const notified = useRef<string | null>(null);
+  useEffect(() => {
+    if (!user) {
+      notified.current = null;
+      return;
+    }
+    if (
+      profileUserId === undefined ||
+      profileUserId === user.id ||
+      notified.current === user.id
+    )
+      return;
+    notified.current = user.id;
+    onLogin?.(user);
+  }, [user, profileUserId, onLogin]);
+
+  // Motor: liga quando há backend + usuário dono do banco aberto + aba líder.
+  const userId =
+    user && (profileUserId === undefined || profileUserId === user.id) ? user.id : null;
   useEffect(() => {
     if (!backend || !userId || readOnly) return;
     let stopped = false;
@@ -117,14 +145,30 @@ export function SyncProvider({
         if (!b) throw new Error('Sincronização não configurada neste build.');
         await b.verifyCode(email, code);
       },
-      signOut: async () => {
+      signInPassword: async (email, password) => {
+        const b = await ensureBackend();
+        if (!b) throw new Error('Sincronização não configurada neste build.');
+        await b.signInWithPassword(email, password);
+      },
+      signUp: async (email, password) => {
+        const b = await ensureBackend();
+        if (!b) throw new Error('Sincronização não configurada neste build.');
+        return b.signUp(email, password);
+      },
+      changePassword: async (password) => {
+        const b = await ensureBackend();
+        if (!b) throw new Error('Sincronização não configurada neste build.');
+        await b.updatePassword(password);
+      },
+      signOut: async (wipe = false) => {
         const b = await ensureBackend();
         await b?.signOut();
         setUser(null);
+        onLogout?.(wipe);
       },
       syncNow: () => schedulerRef.current?.trigger(),
     }),
-    [configured, user, status, ensureBackend],
+    [configured, user, status, ensureBackend, onLogout],
   );
 
   return <SyncCtx.Provider value={api}>{children}</SyncCtx.Provider>;

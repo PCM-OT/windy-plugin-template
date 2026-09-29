@@ -9,6 +9,26 @@ export const syncConfigured = Boolean(SUPABASE_URL && SUPABASE_KEY);
 
 const PAGE = 500;
 
+/** Mensagens do Supabase Auth em português, sem jargão. */
+export function friendlyAuthError(message: string): string {
+  const m = message.toLowerCase();
+  const wait = m.match(/after (\d+) seconds?/);
+  if (m.includes('invalid login credentials')) return 'E-mail ou senha incorretos.';
+  if (m.includes('email not confirmed'))
+    return 'Falta confirmar o e-mail: abra a mensagem que enviamos ao criar a conta e toque no link.';
+  if (m.includes('user already registered'))
+    return 'Este e-mail já tem conta. Use “Entrar”.';
+  if (wait) return `Aguarde ${wait[1]} segundos para pedir outro e-mail.`;
+  if (m.includes('rate limit'))
+    return 'Muitos e-mails enviados em pouco tempo. Aguarde alguns minutos e tente de novo, ou use “Entrar” com a senha.';
+  if (m.includes('password should be') || m.includes('weak'))
+    return 'Senha fraca demais: use pelo menos 8 caracteres.';
+  if (m.includes('same password')) return 'A nova senha precisa ser diferente da atual.';
+  if (m.includes('failed to fetch') || m.includes('network'))
+    return 'Sem conexão com a internet.';
+  return message;
+}
+
 /**
  * Cliente Supabase carregado sob demanda (import dinâmico): quem não usa a sincronização
  * não paga o custo no primeiro carregamento. A chave é a *publishable* (pública por desenho);
@@ -37,12 +57,32 @@ export async function createSupabaseBackend(
       );
       return () => data.subscription.unsubscribe();
     },
+    async signInWithPassword(email, password) {
+      const { error } = await client.auth.signInWithPassword({ email, password });
+      if (error) throw new Error(friendlyAuthError(error.message));
+    },
+    async signUp(email, password) {
+      const { data, error } = await client.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: `${location.origin}/` },
+      });
+      if (error) throw new Error(friendlyAuthError(error.message));
+      // E-mail já cadastrado: o Supabase responde "sucesso" sem identidades (para não revelar contas).
+      if (data.user && data.user.identities?.length === 0)
+        throw new Error(friendlyAuthError('User already registered'));
+      return { signedIn: Boolean(data.session) };
+    },
+    async updatePassword(password) {
+      const { error } = await client.auth.updateUser({ password });
+      if (error) throw new Error(friendlyAuthError(error.message));
+    },
     async signInWithEmail(email) {
       const { error } = await client.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: `${location.origin}/`, shouldCreateUser: true },
       });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(friendlyAuthError(error.message));
     },
     async verifyCode(email, code) {
       const { error } = await client.auth.verifyOtp({

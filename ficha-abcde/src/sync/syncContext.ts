@@ -7,9 +7,13 @@ export interface SyncApi {
   configured: boolean;
   user: SyncUser | null;
   status: SyncStatus;
+  signInPassword: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<{ signedIn: boolean }>;
+  changePassword: (password: string) => Promise<void>;
   signIn: (email: string) => Promise<void>;
   verify: (email: string, code: string) => Promise<void>;
-  signOut: () => Promise<void>;
+  /** `wipe`: também apaga os dados desta conta neste aparelho (a cópia na nuvem fica). */
+  signOut: (wipe?: boolean) => Promise<void>;
   syncNow: () => void;
 }
 
@@ -20,6 +24,9 @@ const OFF: SyncApi = {
   configured: false,
   user: null,
   status: LOCAL_STATUS,
+  signInPassword: async () => {},
+  signUp: async () => ({ signedIn: false }),
+  changePassword: async () => {},
   signIn: async () => {},
   verify: async () => {},
   signOut: async () => {},

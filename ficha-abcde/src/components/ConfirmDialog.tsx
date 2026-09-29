@@ -4,6 +4,7 @@ interface Props {
   title: string;
   message: string;
   confirmLabel: string;
+  cancelLabel?: string;
   danger?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -13,6 +14,7 @@ export function ConfirmDialog({
   title,
   message,
   confirmLabel,
+  cancelLabel = 'Cancelar',
   danger,
   onConfirm,
   onCancel,
@@ -29,7 +31,7 @@ export function ConfirmDialog({
       <p>{message}</p>
       <div className="row">
         <button className="btn" onClick={onCancel}>
-          Cancelar
+          {cancelLabel}
         </button>
         <button
           className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`}

@@ -1,33 +1,13 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { App } from '../../src/App';
 import { AppDataProvider } from '../../src/data/AppData';
 import { SyncProvider } from '../../src/sync/SyncProvider';
-import type { SyncBackend, SyncUser } from '../../src/sync/types';
+import type { SyncBackend } from '../../src/sync/types';
+import { fakeBackend } from './fakeBackend';
 import { FakeServer } from './fakeServer';
 import { freshRepo, session } from './helpers';
-
-function fakeBackend(server: FakeServer, initial: SyncUser | null = null) {
-  let user = initial;
-  const listeners = new Set<(u: SyncUser | null) => void>();
-  const set = (u: SyncUser | null) => {
-    user = u;
-    listeners.forEach((l) => l(u));
-  };
-  const backend: SyncBackend = {
-    getUser: async () => user,
-    onAuthChange: (cb) => {
-      listeners.add(cb);
-      return () => listeners.delete(cb);
-    },
-    signInWithEmail: vi.fn(async () => {}),
-    verifyCode: vi.fn(async (email: string) => set({ id: 'u1', email })),
-    signOut: vi.fn(async () => set(null)),
-    remote: (id) => server.remote(id),
-  };
-  return { backend, set };
-}
 
 async function open(
   opts: {
@@ -57,7 +37,7 @@ async function open(
 describe('Ajustes › sincronização', () => {
   it('sem configuração: explica e o app segue local', async () => {
     await open({ configured: false });
-    expect(screen.getByText(/não está configurada neste build/)).toBeInTheDocument();
+    expect(screen.getByText(/não estão configuradas neste build/)).toBeInTheDocument();
     expect(screen.getByTestId('sync-status')).toHaveTextContent('Salvo neste aparelho.');
   });
 
