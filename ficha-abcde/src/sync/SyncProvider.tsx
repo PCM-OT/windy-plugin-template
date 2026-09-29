@@ -31,8 +31,32 @@ interface Props {
   children: ReactNode;
 }
 
-const defaultLoad = async () =>
-  syncConfigured ? createSupabaseBackend(SUPABASE_URL!, SUPABASE_KEY!) : null;
+// "Falta definir a nova senha" precisa sobreviver à troca de perfil (que recria as telas) e a um recarregamento.
+const RECOVERY_KEY = 'ficha-abcde:recovery';
+function readRecovery(): boolean {
+  try {
+    return sessionStorage.getItem(RECOVERY_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+function writeRecovery(v: boolean) {
+  try {
+    if (v) sessionStorage.setItem(RECOVERY_KEY, '1');
+    else sessionStorage.removeItem(RECOVERY_KEY);
+  } catch {
+    /* sem sessionStorage: o pedido some ao recarregar; a senha continua trocável em Ajustes */
+  }
+}
+
+// Um único cliente Supabase por página (vários clientes disputam o mesmo login guardado).
+let cachedBackend: Promise<SyncBackend | null> | null = null;
+const defaultLoad = () => {
+  cachedBackend ??= syncConfigured
+    ? createSupabaseBackend(SUPABASE_URL!, SUPABASE_KEY!)
+    : Promise.resolve(null);
+  return cachedBackend;
+};
 
 /**
  * Sincronização opcional. Sem login o app é 100% local e nada aqui roda; o cliente Supabase
@@ -51,6 +75,11 @@ export function SyncProvider({
   const [backend, setBackend] = useState<SyncBackend | null>(null);
   const [user, setUser] = useState<SyncUser | null>(null);
   const [status, setStatus] = useState<SyncStatus>(LOCAL_STATUS);
+  const [recovery, setRecoveryState] = useState(readRecovery);
+  const setRecovery = useCallback((v: boolean) => {
+    writeRecovery(v);
+    setRecoveryState(v);
+  }, []);
   const backendRef = useRef<Promise<SyncBackend | null> | null>(null);
   const schedulerRef = useRef<ReturnType<typeof createScheduler> | null>(null);
   const reloadRef = useRef(reload);
@@ -63,11 +92,14 @@ export function SyncProvider({
       if (!b) return null;
       setBackend(b);
       setUser(await b.getUser());
-      b.onAuthChange(setUser);
+      b.onAuthChange((u, event) => {
+        setUser(u);
+        if (event === 'PASSWORD_RECOVERY') setRecovery(true);
+      });
       return b;
     });
     return backendRef.current;
-  }, [loadBackend]);
+  }, [loadBackend, setRecovery]);
 
   // Já tinha login guardado: prepara em segundo plano (o import dinâmico só acontece aqui).
   useEffect(() => {
@@ -155,6 +187,13 @@ export function SyncProvider({
         if (!b) throw new Error('Sincronização não configurada neste build.');
         return b.signUp(email, password);
       },
+      resetPassword: async (email) => {
+        const b = await ensureBackend();
+        if (!b) throw new Error('Sincronização não configurada neste build.');
+        await b.resetPassword(email);
+      },
+      recovery,
+      clearRecovery: () => setRecovery(false),
       changePassword: async (password) => {
         const b = await ensureBackend();
         if (!b) throw new Error('Sincronização não configurada neste build.');
@@ -168,7 +207,7 @@ export function SyncProvider({
       },
       syncNow: () => schedulerRef.current?.trigger(),
     }),
-    [configured, user, status, ensureBackend, onLogout],
+    [configured, user, status, ensureBackend, onLogout, recovery, setRecovery],
   );
 
   return <SyncCtx.Provider value={api}>{children}</SyncCtx.Provider>;

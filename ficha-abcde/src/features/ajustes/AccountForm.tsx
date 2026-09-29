@@ -10,7 +10,7 @@ const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
  * Usado na tela de login do primeiro acesso e em Ajustes.
  */
 export function AccountForm() {
-  const { signInPassword, signUp, signIn, verify } = useSync();
+  const { signInPassword, signUp, signIn, verify, resetPassword } = useSync();
   const [mode, setMode] = useState<'entrar' | 'criar'>('entrar');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -104,6 +104,23 @@ export function AccountForm() {
           {busy ? 'Aguarde…' : mode === 'entrar' ? 'Entrar' : 'Criar conta'}
         </button>
       </form>
+      {mode === 'entrar' && (
+        <button
+          className="btn btn-link"
+          disabled={busy || !email.includes('@')}
+          onClick={() =>
+            void run(async () => {
+              await resetPassword(email.trim());
+              return {
+                kind: 'ok',
+                text: 'Enviamos um e-mail com o link para criar uma nova senha. Abra-o neste navegador. Preencha o e-mail acima para pedir.',
+              };
+            })
+          }
+        >
+          Esqueci minha senha
+        </button>
+      )}
 
       <details className="details">
         <summary>Entrar sem senha (link ou código por e-mail)</summary>

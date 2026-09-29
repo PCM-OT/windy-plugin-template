@@ -25,6 +25,7 @@ const U2 = dbNameFor({ userId: 'u2' });
 
 async function wipeAll() {
   localStorage.clear();
+  sessionStorage.clear();
   for (const n of [ANON, U1, U2]) await Dexie.delete(n);
 }
 beforeEach(wipeAll);
@@ -370,5 +371,70 @@ describe('tela de login no primeiro acesso', () => {
     await userEvent.type(screen.getByLabelText(/Senha \(mínimo 8/), 'senha-forte-1');
     await userEvent.click(screen.getByRole('button', { name: 'Criar conta' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/limite de envios/);
+  });
+});
+
+describe('esqueci minha senha', () => {
+  it('pede o e-mail, envia o link de redefinição e explica o próximo passo', async () => {
+    const { backend } = mount();
+    await goAjustes();
+    const btn = screen.getByRole('button', { name: 'Esqueci minha senha' });
+    expect(btn).toBeDisabled(); // sem e-mail
+    await userEvent.type(screen.getByLabelText('E-mail'), 'ana@exemplo.com');
+    await userEvent.click(btn);
+    expect(await screen.findByText(/link para criar uma nova senha/)).toBeInTheDocument();
+    expect(backend.resetPassword).toHaveBeenCalledWith('ana@exemplo.com');
+  });
+
+  it('só aparece em "Já tenho conta"', async () => {
+    mount();
+    await goAjustes();
+    await userEvent.click(screen.getByRole('button', { name: 'Quero criar conta' }));
+    expect(screen.queryByRole('button', { name: 'Esqueci minha senha' })).toBeNull();
+  });
+
+  function withRecovery() {
+    saveGuest(true);
+    localStorage.setItem('sb-fake-auth-token', '{}'); // login guardado: o app carrega o cliente ao abrir
+    const server = new FakeServer();
+    const f = fakeBackend(server, null);
+    render(<Root loadBackend={async () => f.backend} configured />);
+    return f;
+  }
+
+  it('ao entrar pelo link, pede a nova senha e salva', async () => {
+    const f = withRecovery();
+    await screen.findByText(/Próximo treino/);
+    f.recover('ana@exemplo.com');
+    await waitFor(() => expect(loadProfile()?.userId).toBe('u1')); // a troca de perfil recria as telas
+    const dlg = await screen.findByRole('dialog', { name: 'Crie uma nova senha' });
+    const save = within(dlg).getByRole('button', { name: 'Salvar nova senha' });
+    expect(save).toBeDisabled();
+    await userEvent.type(within(dlg).getByLabelText(/Nova senha/), 'nova-senha-123');
+    await userEvent.click(save);
+    await waitFor(() =>
+      expect(f.backend.updatePassword).toHaveBeenCalledWith('nova-senha-123'),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Crie uma nova senha' })).toBeNull(),
+    );
+  });
+
+  it('"Agora não" fecha sem trocar; erro ao salvar é mostrado e mantém a tela', async () => {
+    const f = withRecovery();
+    await screen.findByText(/Próximo treino/);
+    (
+      f.backend.updatePassword as unknown as { mockRejectedValueOnce: (e: Error) => void }
+    ).mockRejectedValueOnce(new Error('A nova senha precisa ser diferente da atual.'));
+    f.recover('ana@exemplo.com');
+    await waitFor(() => expect(loadProfile()?.userId).toBe('u1'));
+    let dlg = await screen.findByRole('dialog', { name: 'Crie uma nova senha' });
+    await userEvent.type(within(dlg).getByLabelText(/Nova senha/), 'mesma-senha-1');
+    await userEvent.click(within(dlg).getByRole('button', { name: 'Salvar nova senha' }));
+    expect(await within(dlg).findByRole('alert')).toHaveTextContent('diferente da atual');
+    dlg = screen.getByRole('dialog', { name: 'Crie uma nova senha' });
+    await userEvent.click(within(dlg).getByRole('button', { name: 'Agora não' }));
+    expect(screen.queryByRole('dialog', { name: 'Crie uma nova senha' })).toBeNull();
+    expect(f.backend.updatePassword).toHaveBeenCalledTimes(1);
   });
 });

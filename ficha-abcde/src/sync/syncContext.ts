@@ -10,6 +10,10 @@ export interface SyncApi {
   signInPassword: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<{ signedIn: boolean }>;
   changePassword: (password: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  /** Entrou pelo link de redefinir senha: falta definir a nova senha. */
+  recovery: boolean;
+  clearRecovery: () => void;
   signIn: (email: string) => Promise<void>;
   verify: (email: string, code: string) => Promise<void>;
   /** `wipe`: também apaga os dados desta conta neste aparelho (a cópia na nuvem fica). */
@@ -27,6 +31,9 @@ const OFF: SyncApi = {
   signInPassword: async () => {},
   signUp: async () => ({ signedIn: false }),
   changePassword: async () => {},
+  resetPassword: async () => {},
+  recovery: false,
+  clearRecovery: () => {},
   signIn: async () => {},
   verify: async () => {},
   signOut: async () => {},

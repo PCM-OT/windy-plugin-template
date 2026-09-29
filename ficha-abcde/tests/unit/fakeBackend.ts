@@ -10,13 +10,13 @@ export const ACCOUNTS: Record<string, { id: string; password: string }> = {
 /** Backend de mentira: contas em memória, login por senha/código, nuvem simulada (FakeServer). */
 export function fakeBackend(server: FakeServer, initial: SyncUser | null = null) {
   let user = initial;
-  const listeners = new Set<(u: SyncUser | null) => void>();
-  const set = (u: SyncUser | null) => {
+  const listeners = new Set<(u: SyncUser | null, event?: string) => void>();
+  const set = (u: SyncUser | null, event?: string) => {
     user = u;
     // como o supabase-js: o login fica guardado (é o que faz o app recarregar o cliente ao remontar)
     if (u) localStorage.setItem('sb-fake-auth-token', '{}');
     else localStorage.removeItem('sb-fake-auth-token');
-    listeners.forEach((l) => l(u));
+    listeners.forEach((l) => l(u, event));
   };
   const login = (email: string) => set({ id: ACCOUNTS[email]!.id, email });
   const backend: SyncBackend = {
@@ -35,10 +35,13 @@ export function fakeBackend(server: FakeServer, initial: SyncUser | null = null)
       return { signedIn: false };
     }),
     updatePassword: vi.fn(async () => {}),
+    resetPassword: vi.fn(async () => {}),
     signInWithEmail: vi.fn(async () => {}),
     verifyCode: vi.fn(async (email: string) => login(email)),
     signOut: vi.fn(async () => set(null)),
     remote: (id) => server.remote(id),
   };
-  return { backend, set, login };
+  const recover = (email: string) =>
+    set({ id: ACCOUNTS[email]!.id, email }, 'PASSWORD_RECOVERY');
+  return { backend, set, login, recover };
 }

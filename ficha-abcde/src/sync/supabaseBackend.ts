@@ -73,6 +73,12 @@ export async function createSupabaseBackend(
         throw new Error(friendlyAuthError('User already registered'));
       return { signedIn: Boolean(data.session) };
     },
+    async resetPassword(email) {
+      const { error } = await client.auth.resetPasswordForEmail(email, {
+        redirectTo: `${location.origin}/`,
+      });
+      if (error) throw new Error(friendlyAuthError(error.message));
+    },
     async updatePassword(password) {
       const { error } = await client.auth.updateUser({ password });
       if (error) throw new Error(friendlyAuthError(error.message));

@@ -8,12 +8,15 @@ export interface SyncUser {
 /** O que o app precisa da nuvem: login por link mágico e a ponte de dados. */
 export interface SyncBackend {
   getUser(): Promise<SyncUser | null>;
-  onAuthChange(cb: (u: SyncUser | null) => void): () => void;
+  /** `event` é o evento do Supabase (ex.: PASSWORD_RECOVERY ao abrir o link de redefinir senha). */
+  onAuthChange(cb: (u: SyncUser | null, event?: string) => void): () => void;
   /** E-mail + senha: não gasta e-mail a cada entrada (só a criação da conta manda a confirmação). */
   signInWithPassword(email: string, password: string): Promise<void>;
   /** `signedIn: false` = a conta foi criada e falta confirmar o e-mail. */
   signUp(email: string, password: string): Promise<{ signedIn: boolean }>;
   updatePassword(password: string): Promise<void>;
+  /** Envia o e-mail com o link para redefinir a senha. */
+  resetPassword(email: string): Promise<void>;
   signInWithEmail(email: string): Promise<void>;
   /** Alternativa ao link (útil no app instalado): código de 6 dígitos do e-mail. */
   verifyCode(email: string, code: string): Promise<void>;

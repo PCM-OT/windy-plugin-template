@@ -15,6 +15,7 @@ import {
 import type { Handle, Profile } from './data/profile';
 import { ensurePersistence } from './pwa/storage';
 import { LoginScreen } from './features/login/LoginScreen';
+import { RecoveryPrompt } from './features/login/RecoveryPrompt';
 import { useAppData } from './data/appDataContext';
 import { SyncProvider } from './sync/SyncProvider';
 import { useSync } from './sync/syncContext';
@@ -110,6 +111,7 @@ export function Root({ loadBackend, configured }: Props) {
           configured={configured}
         >
           <PersistOnce handle={handle} />
+          <RecoveryPrompt />
           <Gate profile={profile}>
             <App />
           </Gate>
