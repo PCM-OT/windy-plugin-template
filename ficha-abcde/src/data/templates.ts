@@ -22,6 +22,8 @@ export interface Template {
   basedOn: string[];
   /** Observações de como usar. */
   notes?: string;
+  /** Aviso importante exibido em destaque (ex.: condição de saúde). */
+  warning?: string;
   workouts: Workout[];
 }
 
@@ -154,6 +156,64 @@ export const TEMPLATES: readonly Template[] = [
           ['desenvolvimento-maquina', 2, [10, 12]],
           ['triceps-corda', 2, [10, 12]],
           ['rosca-alternada', 2, [10, 12]],
+        ],
+      ),
+    ],
+  }),
+
+  t('corpo-inteiro-joelho', 'Corpo inteiro · cuidado com o joelho (condropatia)', {
+    summary:
+      'Dois treinos de corpo inteiro em rotação, com cardio de baixo impacto no final. Evita exercícios que flexionam o joelho sob carga, impacto e escada; cada sessão cabe em cerca de 50 minutos, com o cardio incluído.',
+    level: 'Iniciante a intermediário',
+    place: 'Academia',
+    daysPerWeek: 3,
+    daysLabel: '3 dias por semana',
+    goal: 'Fortalecer o corpo todo e manter o condicionamento poupando os joelhos',
+    totalSessions: 36,
+    basedOn: [
+      'pag-2018',
+      'ms-2021',
+      'oarsi-2019',
+      'pf-stairs',
+      'sportmed-chondromalacia',
+    ],
+    warning:
+      'Condropatia grau IV é um quadro grave, e a literatura que encontrei para escolher exercícios é limitada. Esta ficha é um ponto de partida para você levar ao seu ortopedista ou fisioterapeuta: comece só depois da liberação dele, que deve definir carga e amplitude, principalmente para a coxa. Pare qualquer exercício se sentir dor no joelho, e avise o profissional se ela persistir.',
+    notes:
+      'Alterne A e B (3 dias por semana, com um dia de descanso entre as sessões). Tempo estimado: 35 a 40 minutos de musculação + 12 minutos de cardio na bicicleta, ao final, dentro de 50 minutos. Se a bicicleta estiver ocupada, use a esteira em caminhada plana (sem inclinação, sem corrida). Não use a escada (simulador): ela aumenta bastante a carga entre a patela e o fêmur. Não incluí agachamento, leg press, avanço nem cadeira extensora; a parte da frente da coxa fica só com a elevação de perna reta. Se o seu profissional liberar outros exercícios de coxa, você pode adicioná-los pelo catálogo.',
+    workouts: [
+      workout(
+        'corpo-inteiro-joelho',
+        'A',
+        'Corpo inteiro A',
+        'Peito, costas, ombros, glúteos, posterior, tríceps, abdômen, cardio',
+        [
+          ['supino-maquina', 3, [10, 12], 60],
+          ['puxada-triangulo', 3, [10, 12], 60],
+          ['desenvolvimento-maquina', 2, [10, 12], 60],
+          ['gluteo-polia', 2, [10, 12], 60],
+          ['mesa-flexora', 2, [10, 12], 60],
+          ['elevacao-perna-reta', 2, [10, 15], 45],
+          ['triceps-corda', 2, [10, 12], 60],
+          ['abdominal-maquina', 2, [12, 15], 45],
+          ['bicicleta-ergometrica', 1, [10, 12], 0],
+        ],
+      ),
+      workout(
+        'corpo-inteiro-joelho',
+        'B',
+        'Corpo inteiro B',
+        'Peito, costas, ombros, posterior, quadril, panturrilha, bíceps, core, cardio',
+        [
+          ['supino-inclinado-halteres', 3, [10, 12], 75],
+          ['remada-baixa', 3, [10, 12], 75],
+          ['elevacao-lateral', 2, [12, 15], 45],
+          ['stiff', 3, [10, 12], 60],
+          ['cadeira-abdutora', 2, [12, 15], 45],
+          ['panturrilha-em-pe', 2, [12, 15], 45],
+          ['rosca-maquina', 2, [10, 12], 45],
+          ['prancha', 2, [30, 45], 45],
+          ['bicicleta-ergometrica', 1, [10, 12], 0],
         ],
       ),
     ],

@@ -24,6 +24,13 @@ for (const scheme of ['light', 'dark'] as const) {
     await page.getByRole('button', { name: 'Como fazer' }).first().click();
     expect(await audit(page)).toEqual([]); // detalhe da ficha, com dicas e fontes
     await page.getByRole('button', { name: 'Treinos' }).click();
+    await page.getByRole('button', { name: 'Ver fichas prontas' }).click();
+    await page
+      .getByRole('button', { name: /^Ver a ficha Corpo inteiro · cuidado com o joelho/ })
+      .click();
+    await expect(page.getByRole('note')).toContainText('ortopedista ou fisioterapeuta');
+    expect(await audit(page)).toEqual([]); // ficha com aviso de saúde
+    await page.getByRole('button', { name: 'Treinos' }).click();
 
     await page.getByRole('button', { name: 'Treino A, Quadríceps' }).click();
     expect(await audit(page)).toEqual([]); // pré-visualização

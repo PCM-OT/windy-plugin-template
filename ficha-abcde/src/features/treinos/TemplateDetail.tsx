@@ -62,6 +62,11 @@ export function TemplateDetail({ id, onBack, onApplied }: Props) {
         </span>
         {tpl.totalSessions && <span className="tag">{tpl.totalSessions} sessões</span>}
       </p>
+      {tpl.warning && (
+        <p className="warn" role="note">
+          <strong>Importante:</strong> {tpl.warning}
+        </p>
+      )}
       <p>{tpl.summary}</p>
       <p className="muted">Objetivo: {tpl.goal}</p>
       {tpl.notes && <p className="muted">{tpl.notes}</p>}

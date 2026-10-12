@@ -17,6 +17,7 @@ export type MuscleGroup =
   | 'Adutores e abdutores'
   | 'Panturrilha'
   | 'Corpo todo'
+  | 'Cardio'
   | 'Mobilidade';
 
 export type Equipment = 'Máquina' | 'Halteres' | 'Barra' | 'Polia' | 'Peso corporal';
@@ -34,6 +35,7 @@ export const MUSCLE_GROUPS: readonly MuscleGroup[] = [
   'Adutores e abdutores',
   'Panturrilha',
   'Corpo todo',
+  'Cardio',
   'Mobilidade',
 ];
 
@@ -72,7 +74,7 @@ const CORE: Def = { sets: 3, reps: [12, 20], restSec: 45 };
 const BODY: Def = { sets: 3, reps: [8, 15], restSec: 60, noLoad: true };
 const MOB: Def = { sets: 2, reps: [8, 12], restSec: 30, noLoad: true };
 
-export const CATALOG: readonly CatalogExercise[] = [
+const RAW_CATALOG: readonly CatalogExercise[] = [
   // ---------------------------------------------------------------- Peito
   ex(
     'supino-reto-barra',
@@ -978,6 +980,61 @@ export const CATALOG: readonly CatalogExercise[] = [
     ],
   ),
 
+  // ---------------------------------------------------- Quadríceps (baixo impacto)
+  ex(
+    'elevacao-perna-reta',
+    'Elevação de perna reta',
+    'Quadríceps',
+    'Peso corporal',
+    { sets: 3, reps: [10, 15], restSec: 45, noLoad: true },
+    [
+      'Deite de costas com uma perna flexionada e o pé no chão; a outra perna fica estendida.',
+      'Contraia a coxa da perna estendida (como se “travasse” o joelho) e eleve a perna até a altura do joelho da outra, sem dobrar o joelho.',
+      'Desça devagar, mantendo a coxa contraída, e repita; depois troque de lado.',
+    ],
+    [
+      'Trabalha a parte da frente da coxa sem flexionar o joelho sob carga, por isso costuma ser usado em reabilitação.',
+      'Não arqueie a lombar nem use impulso. Pare se sentir dor no joelho.',
+    ],
+  ),
+
+  // ------------------------------------------------------------------ Cardio
+  ex(
+    'bicicleta-ergometrica',
+    'Bicicleta ergométrica (cardio, registre os minutos)',
+    'Cardio',
+    'Máquina',
+    { sets: 1, reps: [10, 15], restSec: 0, noLoad: true },
+    [
+      'Ajuste o banco mais alto, de modo que o joelho fique só levemente flexionado quando o pedal está embaixo.',
+      'Comece pedalando leve por 2 a 3 minutos, com a resistência baixa.',
+      'Mantenha um ritmo em que ainda consiga conversar, com cadência confortável, sem “forçar” a carga.',
+      'Nos últimos minutos, diminua o ritmo para voltar ao normal aos poucos.',
+    ],
+    [
+      'Neste app, registre a duração em minutos no campo de repetições.',
+      'Banco baixo aumenta a flexão do joelho a cada pedalada; se sentir dor, suba o banco, reduza a carga ou pare.',
+      'Aumente tempo ou carga aos poucos, nunca os dois no mesmo dia.',
+    ],
+  ),
+  ex(
+    'esteira-caminhada',
+    'Esteira: caminhada plana (cardio, registre os minutos)',
+    'Cardio',
+    'Máquina',
+    { sets: 1, reps: [10, 20], restSec: 0, noLoad: true },
+    [
+      'Deixe a inclinação em 0% e comece devagar por 2 a 3 minutos.',
+      'Aumente para um passo firme, em que ainda consiga conversar, mantendo a postura ereta.',
+      'Termine reduzindo a velocidade nos últimos minutos.',
+    ],
+    [
+      'Neste app, registre a duração em minutos no campo de repetições.',
+      'Evite correr e evite inclinação: subidas aumentam a carga nos joelhos. Use calçado com bom amortecimento.',
+      'Dor no joelho durante ou depois? Reduza o tempo ou troque pela bicicleta.',
+    ],
+  ),
+
   // ------------------------------------------------------------ Mobilidade
   ex(
     'mob-quadril-tornozelo',
@@ -1038,6 +1095,23 @@ export const CATALOG: readonly CatalogExercise[] = [
     ['O giro vem das costas do meio, não da lombar.', 'Quadril parado.'],
   ),
 ];
+
+/** Exercícios que flexionam o joelho sob carga ou aumentam a carga na patela. */
+const KNEE_DEMANDING = new Set([
+  'agachamento-livre',
+  'agachamento-maquina',
+  'leg-press',
+  'cadeira-extensora',
+  'avanco-halteres',
+  'agachamento-bulgaro',
+  'agachamento-sumo-halter',
+]);
+const KNEE_NOTE =
+  'Tem dor ou problema no joelho (por exemplo condropatia/condromalácia)? Combine com seu ortopedista ou fisioterapeuta a amplitude e a carga seguras antes de fazer; em geral este exercício é limitado ou evitado.';
+
+export const CATALOG: readonly CatalogExercise[] = RAW_CATALOG.map((e) =>
+  KNEE_DEMANDING.has(e.id) ? { ...e, tips: [...e.tips, KNEE_NOTE] } : e,
+);
 
 const BY_ID = new Map(CATALOG.map((e) => [e.id, e]));
 

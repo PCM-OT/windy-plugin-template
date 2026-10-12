@@ -65,6 +65,32 @@ export const SOURCES: readonly Source[] = [
     url: 'https://pubmed.ncbi.nlm.nih.gov/26605807/',
   },
   {
+    id: 'oarsi-2019',
+    kind: 'diretriz',
+    title:
+      'OARSI (2019). OARSI guidelines for the non-surgical management of knee, hip, and polyarticular osteoarthritis',
+    detail:
+      'Osteoarthritis and Cartilage. Programas de exercício em solo (fortalecimento e/ou aeróbico e/ou equilíbrio) estão entre os tratamentos centrais da osteoartrite de joelho. Não trata de condropatia grau IV especificamente.',
+    url: 'https://pubmed.ncbi.nlm.nih.gov/31278997/',
+  },
+  {
+    id: 'pf-stairs',
+    kind: 'estudo',
+    title:
+      'Stair climbing results in more challenging patellofemoral contact mechanics and kinematics than walking at early knee flexion under physiological-like quadriceps loading',
+    detail:
+      'Estudo biomecânico: subir escada gera pressão e carga maiores entre a patela e o fêmur do que caminhar no plano (revisões estimam cerca de 3 vezes o peso corporal na escada contra cerca de 0,9 na caminhada). Base para evitar escada e subidas em problemas de cartilagem da patela.',
+    url: 'https://pubmed.ncbi.nlm.nih.gov/19656517/',
+  },
+  {
+    id: 'sportmed-chondromalacia',
+    kind: 'tecnica',
+    title: 'SportMed. Chondromalacia (material educativo para pacientes)',
+    detail:
+      'Orientações gerais: evitar agachamentos, avanços, simulador de escada e cadeira extensora; bicicleta ergométrica com banco alto e carga baixa se não houver dor. É material educativo, não diretriz clínica.',
+    url: 'https://sportmed.com/wp-content/uploads/Chondromalacia.pdf',
+  },
+  {
     id: 'ace-library',
     kind: 'tecnica',
     title: 'ACE (American Council on Exercise). Exercise Library',

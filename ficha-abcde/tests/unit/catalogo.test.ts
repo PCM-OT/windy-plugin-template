@@ -229,3 +229,114 @@ describe('ficha "Corpo inteiro · 3 a 4 dias por semana"', () => {
       expect(sets(grp), grp).toBeGreaterThanOrEqual(6);
   });
 });
+
+describe('ficha "Corpo inteiro · cuidado com o joelho"', () => {
+  const tpl = TEMPLATES.find((t) => t.id === 'corpo-inteiro-joelho')!;
+  const all = tpl.workouts.flatMap((w) => w.exercises);
+  const cat = (id: string | null) => getCatalogExercise(id)!;
+
+  it('existe, com aviso claro para validar com ortopedista/fisioterapeuta', () => {
+    expect(tpl).toBeDefined();
+    expect(tpl.warning).toMatch(/ortopedista ou fisioterapeuta/);
+    expect(tpl.warning).toMatch(/Pare/);
+    expect(tpl.workouts.map((w) => w.id)).toEqual(['A', 'B']);
+  });
+
+  it('não contém exercícios que flexionam o joelho sob carga nem impacto', () => {
+    const proibidos = [
+      'agachamento-livre',
+      'agachamento-maquina',
+      'leg-press',
+      'cadeira-extensora',
+      'avanco-halteres',
+      'agachamento-bulgaro',
+      'agachamento-sumo-halter',
+    ];
+    for (const e of all) expect(proibidos, e.name).not.toContain(e.catalogId);
+    // nada de escada, corrida ou salto no texto da ficha ou nos exercícios usados
+    for (const e of all)
+      expect(e.name.toLowerCase(), e.name).not.toMatch(/escada|salto|corrida|step/);
+  });
+
+  it('todo exercício que exige cuidado no joelho avisa no catálogo', () => {
+    for (const id of [
+      'agachamento-livre',
+      'leg-press',
+      'cadeira-extensora',
+      'avanco-halteres',
+      'agachamento-bulgaro',
+      'agachamento-sumo-halter',
+      'agachamento-maquina',
+    ]) {
+      expect(cat(id).tips.join(' '), id).toMatch(/ortopedista ou fisioterapeuta/);
+    }
+  });
+
+  it('a notas orientam sobre escada, esteira plana e a bicicleta', () => {
+    expect(tpl.notes).toMatch(/escada/i);
+    expect(tpl.notes).toMatch(/sem inclinação/);
+    expect(tpl.notes).toMatch(/bicicleta/);
+  });
+
+  it('cada sessão termina com cardio de baixo impacto na bicicleta (banco alto, carga baixa)', () => {
+    for (const w of tpl.workouts) {
+      const last = w.exercises.at(-1)!;
+      expect(last.catalogId, w.id).toBe('bicicleta-ergometrica');
+    }
+    const bike = cat('bicicleta-ergometrica');
+    expect(bike.steps.join(' ')).toMatch(/banco mais alto/);
+    expect(bike.steps.join(' ')).toMatch(/resistência baixa/);
+    expect(cat('esteira-caminhada').steps.join(' ')).toMatch(/inclinação em 0%/);
+  });
+
+  it('cada sessão cabe em 50 minutos, cardio incluído (estimativa: 45 s de execução por série + descanso + 5 min de aquecimento)', () => {
+    for (const w of tpl.workouts) {
+      const force = w.exercises.filter((e) => cat(e.catalogId).group !== 'Cardio');
+      const cardio = w.exercises.filter((e) => cat(e.catalogId).group === 'Cardio');
+      const minutosForca =
+        5 + force.reduce((a, e) => a + (e.sets * (45 + e.restSec)) / 60, 0);
+      const minutosCardio = cardio.reduce((a, e) => a + (e.reps?.max ?? 0), 0);
+      expect(
+        minutosForca + minutosCardio,
+        `${w.id}: ${minutosForca.toFixed(1)} + ${minutosCardio}`,
+      ).toBeLessThanOrEqual(50);
+      expect(minutosCardio).toBeGreaterThanOrEqual(10);
+    }
+  });
+
+  it('trabalha todos os grupos musculares (a coxa da frente só por elevação de perna reta)', () => {
+    const grupos = new Set(all.map((e) => cat(e.catalogId).group));
+    for (const g of [
+      'Peito',
+      'Costas',
+      'Ombros',
+      'Bíceps',
+      'Tríceps',
+      'Abdômen',
+      'Quadríceps',
+      'Posterior de coxa',
+      'Glúteos',
+      'Adutores e abdutores',
+      'Panturrilha',
+      'Cardio',
+    ]) {
+      expect(grupos.has(g as never), g).toBe(true);
+    }
+    const quad = all
+      .filter((e) => cat(e.catalogId).group === 'Quadríceps')
+      .map((e) => e.catalogId);
+    expect(new Set(quad)).toEqual(new Set(['elevacao-perna-reta']));
+  });
+
+  it('as fontes citadas existem e deixam claro que não há consenso para o grau IV', () => {
+    for (const id of tpl.basedOn) expect(getSource(id), id).toBeDefined();
+    expect(getSource('oarsi-2019')!.detail).toMatch(/Não trata de condropatia grau IV/);
+    expect(getSource('sportmed-chondromalacia')!.detail).toMatch(/não diretriz clínica/);
+  });
+
+  it('o cardio no catálogo registra minutos e a elevação de perna reta existe', () => {
+    expect(cat('bicicleta-ergometrica').tips.join(' ')).toMatch(/minutos/);
+    expect(cat('esteira-caminhada').tips.join(' ')).toMatch(/Evite correr/);
+    expect(cat('elevacao-perna-reta').group).toBe('Quadríceps');
+  });
+});
