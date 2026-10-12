@@ -30,7 +30,8 @@ export function TemplatesScreen({ onBack, onOpen, onScratch, first }: Props) {
               <span className="tag">{t.level}</span>
               <span className="tag">{t.place}</span>
               <span className="tag">
-                {t.daysPerWeek} {t.daysPerWeek === 1 ? 'dia' : 'dias'} por semana
+                {t.daysLabel ??
+                  `${t.daysPerWeek} ${t.daysPerWeek === 1 ? 'dia' : 'dias'} por semana`}
               </span>
             </p>
             <p>{t.summary}</p>

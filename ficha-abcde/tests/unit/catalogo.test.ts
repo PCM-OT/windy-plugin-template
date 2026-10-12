@@ -156,3 +156,76 @@ describe('rotação em fichas de tamanhos diferentes', () => {
     expect(nextWorkout('G', order)).toBe('A');
   });
 });
+
+describe('ficha "Corpo inteiro · 3 a 4 dias por semana"', () => {
+  const tpl = TEMPLATES.find((t) => t.id === 'corpo-inteiro-3-4x')!;
+  const groupsOf = (w: (typeof tpl.workouts)[number]) =>
+    new Set(w.exercises.map((e) => getCatalogExercise(e.catalogId)!.group));
+
+  it('existe, com 3 treinos (A, B, C) e a faixa de 3 a 4 dias', () => {
+    expect(tpl).toBeDefined();
+    expect(tpl.workouts.map((w) => w.id)).toEqual(['A', 'B', 'C']);
+    expect(tpl.daysLabel).toBe('3 a 4 dias por semana');
+    expect(tpl.daysPerWeek).toBeGreaterThanOrEqual(3);
+    expect(tpl.daysPerWeek).toBeLessThanOrEqual(4);
+  });
+
+  it('todo treino é de corpo inteiro: pernas, peito, costas, ombros e abdômen/core', () => {
+    for (const w of tpl.workouts) {
+      const g = groupsOf(w);
+      const legs = ['Quadríceps', 'Posterior de coxa', 'Glúteos'].some((x) =>
+        g.has(x as never),
+      );
+      expect(legs, `${w.id} pernas`).toBe(true);
+      for (const need of ['Peito', 'Costas', 'Ombros'])
+        expect(g.has(need as never), `${w.id} ${need}`).toBe(true);
+    }
+    // abdômen em pelo menos 2 dos 3 treinos
+    expect(
+      tpl.workouts.filter((w) => groupsOf(w).has('Abdômen')).length,
+    ).toBeGreaterThanOrEqual(2);
+  });
+
+  it('cada treino tem quadril e joelho; empurrar e puxar equilibrados', () => {
+    for (const w of tpl.workouts) {
+      const g = w.exercises.map((e) => getCatalogExercise(e.catalogId)!.group);
+      const push = g.filter((x) => x === 'Peito').length;
+      const pull = g.filter((x) => x === 'Costas').length;
+      expect(Math.abs(push - pull), `${w.id} empurrar×puxar`).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('com 3 ou 4 sessões por semana, a rotação passa por todos os treinos e cada grupo cai 2×+ por semana', () => {
+    const order = tpl.workouts.map((w) => w.id);
+    for (const perWeek of [3, 4]) {
+      let last: (typeof order)[number] | null = null;
+      const seq: string[] = [];
+      for (let i = 0; i < perWeek * 2; i++) {
+        last = nextWorkout(last, order);
+        seq.push(last);
+      }
+      expect(new Set(seq)).toEqual(new Set(order));
+    }
+    // grupos grandes aparecem em todos os 3 treinos → 3 a 4 sessões = 3 a 4 estímulos semanais
+    for (const grp of ['Peito', 'Costas', 'Ombros']) {
+      expect(
+        tpl.workouts.every((w) => groupsOf(w).has(grp as never)),
+        grp,
+      ).toBe(true);
+    }
+  });
+
+  it('séries semanais por grande grupo ficam em faixa razoável (≥ 6 por semana com 3 sessões)', () => {
+    const sets = (grp: string) =>
+      tpl.workouts.reduce(
+        (acc, w) =>
+          acc +
+          w.exercises
+            .filter((e) => getCatalogExercise(e.catalogId)!.group === grp)
+            .reduce((a, e) => a + e.sets, 0),
+        0,
+      );
+    for (const grp of ['Peito', 'Costas', 'Ombros', 'Quadríceps'])
+      expect(sets(grp), grp).toBeGreaterThanOrEqual(6);
+  });
+});

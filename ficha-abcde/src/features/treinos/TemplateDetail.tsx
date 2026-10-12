@@ -57,7 +57,8 @@ export function TemplateDetail({ id, onBack, onApplied }: Props) {
         <span className="tag">{tpl.level}</span>
         <span className="tag">{tpl.place}</span>
         <span className="tag">
-          {tpl.daysPerWeek} {tpl.daysPerWeek === 1 ? 'dia' : 'dias'} por semana
+          {tpl.daysLabel ??
+            `${tpl.daysPerWeek} ${tpl.daysPerWeek === 1 ? 'dia' : 'dias'} por semana`}
         </span>
         {tpl.totalSessions && <span className="tag">{tpl.totalSessions} sessões</span>}
       </p>

@@ -3,7 +3,8 @@ import type { Exercise, Plan, Workout, WorkoutId } from '../domain/schemas';
 import { getCatalogExercise } from './catalog';
 import { seedPlan } from './seed';
 
-export type Level = 'Iniciante' | 'Intermediário' | 'Qualquer nível';
+export type Level =
+  'Iniciante' | 'Intermediário' | 'Iniciante a intermediário' | 'Qualquer nível';
 
 export interface Template {
   id: string;
@@ -12,6 +13,8 @@ export interface Template {
   level: Level;
   place: 'Academia' | 'Em casa';
   daysPerWeek: number;
+  /** Texto livre quando a frequência é uma faixa (ex.: "3 a 4 dias"). */
+  daysLabel?: string;
   goal: string;
   /** Meta de sessões (semanas × dias). */
   totalSessions: number | null;
@@ -87,6 +90,72 @@ export const TEMPLATES: readonly Template[] = [
         ['mesa-flexora', 2, [10, 12]],
         ['prancha', 2, [20, 40]],
       ]),
+    ],
+  }),
+
+  t('corpo-inteiro-3-4x', 'Corpo inteiro · 3 a 4 dias por semana', {
+    summary:
+      'Três treinos de corpo inteiro (A, B e C) em rotação. Cada sessão trabalha pernas, peito, costas, ombros e abdômen; em 3 ou 4 dias por semana, cada grande grupo é treinado de 2 a 3 vezes.',
+    level: 'Iniciante a intermediário',
+    place: 'Academia',
+    daysPerWeek: 3,
+    daysLabel: '3 a 4 dias por semana',
+    goal: 'Força e hipertrofia com treinos curtos e frequência alta',
+    totalSessions: 42,
+    basedOn: [
+      'acsm-2009',
+      'pag-2018',
+      'ms-2021',
+      'schoenfeld-2016-freq',
+      'schoenfeld-2017-vol',
+      'schoenfeld-2016-rest',
+    ],
+    notes:
+      'Siga a ordem A → B → C → A…: o app avança sozinho para o próximo treino, então não precisa de dia fixo da semana. Deixe pelo menos um dia de descanso entre as sessões. Regra prática de progressão: quando completar o topo da faixa de repetições em todas as séries com boa técnica, aumente a carga um pouco na sessão seguinte.',
+    workouts: [
+      workout(
+        'corpo-inteiro-3-4x',
+        'A',
+        'Corpo inteiro A',
+        'Pernas, peito, costas, ombros, abdômen',
+        [
+          ['leg-press', 3, [8, 12]],
+          ['supino-reto-halteres', 3, [8, 12]],
+          ['puxada-frontal', 3, [8, 12]],
+          ['stiff', 3, [8, 12]],
+          ['desenvolvimento-halteres', 2, [8, 12]],
+          ['prancha', 2, [30, 45]],
+        ],
+      ),
+      workout(
+        'corpo-inteiro-3-4x',
+        'B',
+        'Corpo inteiro B',
+        'Pernas, glúteos, peito, costas, ombros',
+        [
+          ['agachamento-maquina', 3, [8, 12]],
+          ['supino-inclinado-halteres', 3, [8, 12]],
+          ['remada-baixa', 3, [8, 12]],
+          ['elevacao-pelvica', 3, [8, 12]],
+          ['elevacao-lateral', 2, [12, 15]],
+          ['abdominal-maquina', 2, [12, 15]],
+        ],
+      ),
+      workout(
+        'corpo-inteiro-3-4x',
+        'C',
+        'Corpo inteiro C',
+        'Pernas, peito, costas, ombros, braços',
+        [
+          ['avanco-halteres', 3, [8, 12]],
+          ['supino-maquina', 3, [10, 12]],
+          ['remada-unilateral', 3, [8, 12]],
+          ['mesa-flexora', 3, [10, 12]],
+          ['desenvolvimento-maquina', 2, [10, 12]],
+          ['triceps-corda', 2, [10, 12]],
+          ['rosca-alternada', 2, [10, 12]],
+        ],
+      ),
     ],
   }),
 
